@@ -53,7 +53,7 @@ literal_impls! {
     str => string,
     String => string,
 
-    std::ffi::CStr => c_string,
+    core::ffi::CStr => c_string,
     std::ffi::CString => c_string,
 }
 
@@ -87,6 +87,12 @@ proc_macro_impls! {
     crate::proc_macro::TokenStream,
 }
 
+impl ToTokens for crate::proc_macro::token_stream::IntoIter {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(self.clone());
+    }
+}
+
 impl<T: ToTokens> ToTokens for Option<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         if let Some(val) = self {
@@ -95,37 +101,37 @@ impl<T: ToTokens> ToTokens for Option<T> {
     }
 }
 
-impl<T: ToTokens + ToOwned> ToTokens for Cow<'_, T> {
+impl<T: ToTokens + ToOwned + ?Sized> ToTokens for Cow<'_, T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }
 }
 
-impl<T: ToTokens> ToTokens for &T {
+impl<T: ToTokens + ?Sized> ToTokens for &T {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }
 }
 
-impl<T: ToTokens> ToTokens for &mut T {
+impl<T: ToTokens + ?Sized> ToTokens for &mut T {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }
 }
 
-impl<T: ToTokens> ToTokens for Box<T> {
+impl<T: ToTokens + ?Sized> ToTokens for Box<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }
 }
 
-impl<T: ToTokens> ToTokens for Rc<T> {
+impl<T: ToTokens + ?Sized> ToTokens for Rc<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }
 }
 
-impl<T: ToTokens> ToTokens for Arc<T> {
+impl<T: ToTokens + ?Sized> ToTokens for Arc<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         (**self).to_tokens(tokens);
     }

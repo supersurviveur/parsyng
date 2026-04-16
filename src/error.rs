@@ -1,9 +1,9 @@
 use crate::proc_macro::TokenStream;
-use parsyng_quote::ToTokens;
+use parsyng_quote::{ToTokens, parsyng};
 
 #[derive(Debug, Clone)]
 pub enum Diagnostic {
-    Error,
+    Error(String),
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +18,10 @@ impl Diagnostics {
     pub fn new(diagnostic: Diagnostic) -> Self {
         Self(vec![diagnostic])
     }
+    #[must_use]
+    pub fn new_error<T: Into<String>>(error: T) -> Self {
+        Self::new(Diagnostic::Error(error.into()))
+    }
 }
 
 pub type Result<T> = core::result::Result<T, Diagnostics>;
@@ -25,7 +29,9 @@ pub type Result<T> = core::result::Result<T, Diagnostics>;
 impl ToTokens for Diagnostic {
     fn to_tokens(&self, _tokens: &mut TokenStream) {
         match self {
-            Diagnostic::Error => crate::proc_macro::TokenStream::new(),
+            Diagnostic::Error(error) => parsyng! {
+                compile_error!(#{ error })
+            },
         };
     }
 }

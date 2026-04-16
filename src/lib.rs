@@ -5,9 +5,11 @@ pub extern crate proc_macro;
 #[cfg(feature = "proc-macro2")]
 pub use proc_macro2 as proc_macro;
 
+pub mod ast;
 pub mod error;
 pub mod parse;
 
+pub use parsyng_proc_macros::proc_macro;
 pub use parsyng_quote::ToTokens;
 
 pub use parsyng_quote;
@@ -17,6 +19,7 @@ macro_rules! parsyng {
     ($($t:tt)*) => {{
         use $crate::parsyng_quote;
         $crate::parsyng_quote::parsyng! {
-        $($t)*
-    } }};
+            $($t)*
+        }
+    }};
 }

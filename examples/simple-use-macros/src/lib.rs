@@ -1,18 +1,15 @@
-use proc_macro::TokenStream;
-use parsyng::{parse::Parse, parsyng};
+use parsyng::parsyng;
+// use proc_macro::TokenStream;
 
-#[proc_macro]
-pub fn simple_macro(input: TokenStream) -> TokenStream {
-    let mut parse = parsyng::parse::ParseBuffer::new(input.clone());
-    let n = u8::parse(&mut parse);
-    eprintln!("{:?}", n);
+#[parsyng::proc_macro]
+pub fn simple_macro(n: u8) -> u8 {
     let tokens = parsyng! {
-        let a = {{ n.unwrap() }};
+        let a = #{ n.sub(3) };
         {
             let r#b = 0.3;
             r#b
         }
     };
     eprintln!("{}", tokens);
-    input
+    9
 }

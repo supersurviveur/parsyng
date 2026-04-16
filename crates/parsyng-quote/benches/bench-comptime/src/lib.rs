@@ -2,10 +2,10 @@
 
 use proc_macro::TokenStream;
 
-#[cfg(feature = "quote")]
-use quote::{format_ident, quote};
 #[cfg(feature = "parsyng-quote")]
 use parsyng_quote::{format_ident, parsyng};
+#[cfg(feature = "quote")]
+use quote::{format_ident, quote};
 #[cfg(feature = "unsynn")]
 use unsynn::{ToTokens, format_ident, quote};
 
@@ -39,7 +39,7 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
         };
         #[cfg(feature = "parsyng-quote")]
         parsyng! {
-            impl {{ ident }} {
+            impl #{ ident } {
                 pub fn bar<T: Foo>(&mut self) -> Self {
                     // Some code
                     if true {
@@ -239,7 +239,7 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
         };
         #[cfg(feature = "parsyng-quote")]
         parsyng! {
-            impl<'de> _serde::Deserialize<'de> for {{ ident }} {
+            impl<'de> _serde::Deserialize<'de> for #{ ident } {
                 fn deserialize<__D>(__deserializer: __D) -> _serde::export::Result<Self, __D::Error>
                 where
                     __D: _serde::Deserializer<'de>,
@@ -306,11 +306,11 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
                         }
                     }
                     struct __Visitor<'de> {
-                        marker: _serde::export::PhantomData<{{ ident }}>,
+                        marker: _serde::export::PhantomData<#{ ident }>,
                         lifetime: _serde::export::PhantomData<&'de ()>,
                     }
                     impl<'de> _serde::de::Visitor<'de> for __Visitor<'de> {
-                        type Value = {{ ident }};
+                        type Value = #{ ident };
                         fn expecting(
                             &self,
                             __formatter: &mut _serde::export::Formatter,
@@ -345,7 +345,7 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
                                         ));
                                     }
                                 };
-                            _serde::export::Ok({{ ident }} {
+                            _serde::export::Ok(#{ ident } {
                                 id: __field0,
                                 s: __field1,
                             })
@@ -399,7 +399,7 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
                                 _serde::export::Some(__field1) => __field1,
                                 _serde::export::None => try!(_serde::private::de::missing_field("s")),
                             };
-                            _serde::export::Ok({{ ident }} {
+                            _serde::export::Ok(#{ ident } {
                                 id: __field0,
                                 s: __field1,
                             })
@@ -408,7 +408,7 @@ pub fn macro_bench(_: TokenStream) -> TokenStream {
                     const FIELDS: &'static [&'static str] = &["id", "s"];
                     _serde::Deserializer::deserialize_struct(
                         __deserializer,
-                        stringify!({{ ident }}),
+                        stringify!(#{ ident }),
                         FIELDS,
                         __Visitor {
                             marker: _serde::export::PhantomData::<#ident>,

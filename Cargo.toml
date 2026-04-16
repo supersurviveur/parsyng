@@ -8,7 +8,6 @@ keywords = ["macros", "proc"]
 categories = ["development-tools::procedural-macro-helpers"]
 
 [dependencies]
-itertools = "0.14.0"
 parsyng-proc-macros = { path = "./crates/parsyng-proc-macros" }
 parsyng-quote = { path = "./crates/parsyng-quote" }
 proc-macro2 = { version = "1", optional = true }

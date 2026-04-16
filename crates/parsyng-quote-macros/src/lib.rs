@@ -1,5 +1,7 @@
 use proc_macro::{Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
 
+const INTERPOLATION_CHAR: char = '#';
+
 #[proc_macro]
 pub fn parsyng(input: TokenStream) -> TokenStream {
     parse_tokenstream(input)
@@ -12,48 +14,58 @@ fn parse_tokenstream(stream: TokenStream) -> TokenStream {
         "let mut tokens = parsyng_quote::proc_macro::TokenStream::new();".parse::<TokenStream>(),
     );
 
-    let iter = stream.into_iter();
+    let mut iter = stream.into_iter().peekable();
 
-    for tt in iter {
-        if match tt {
-            TokenTree::Group(ref g) if g.delimiter() == proc_macro::Delimiter::Brace => {
-                let mut inner = g.stream().into_iter();
-                if let Some(TokenTree::Group(g)) = inner.next()
-                    && g.delimiter() == proc_macro::Delimiter::Brace
-                {
-                    let mut args = TokenStream::new();
-
-                    // Make `&{interpolation}, &mut tokens`
-                    args.extend::<[TokenTree; _]>([
-                        Punct::new('&', Spacing::Alone).into(),
-                        Group::new(proc_macro::Delimiter::None, g.stream()).into(),
-                        Punct::new(',', Spacing::Alone).into(),
-                        Punct::new('&', Spacing::Alone).into(),
-                        Ident::new("mut", Span::call_site()).into(),
-                        Ident::new("tokens", Span::call_site()).into(),
-                    ]);
-
-                    // Make `::parsyng::ToTokens::to_tokens({args});`
-                    // Or use parsyng_quote if not in the parsyng crate
-                    output.extend::<[TokenTree; _]>([
-                        Ident::new("parsyng_quote", Span::call_site()).into(),
-                        Punct::new(':', Spacing::Joint).into(),
-                        Punct::new(':', Spacing::Alone).into(),
-                        Ident::new("ToTokens", Span::call_site()).into(),
-                        Punct::new(':', Spacing::Joint).into(),
-                        Punct::new(':', Spacing::Alone).into(),
-                        Ident::new("to_tokens", Span::call_site()).into(),
-                        Group::new(proc_macro::Delimiter::Parenthesis, args).into(),
-                        Punct::new(';', Spacing::Alone).into(),
-                    ]);
-
-                    false
-                } else {
-                    true
-                }
+    while let Some(tt) = iter.next() {
+        if let Some(interpolation) = match tt {
+            TokenTree::Punct(ref punct)
+                if punct.as_char() == INTERPOLATION_CHAR
+                    && let Some(TokenTree::Ident(_)) = iter.peek() =>
+            {
+                iter.next()
             }
-            _ => true,
+            TokenTree::Punct(ref punct)
+                if punct.as_char() == INTERPOLATION_CHAR
+                    && let Some(TokenTree::Group(g)) = iter.peek()
+                    && g.delimiter() == proc_macro::Delimiter::Brace =>
+            {
+                let g = match iter.next().unwrap() {
+                    TokenTree::Group(group) => group,
+                    _ => unreachable!(),
+                };
+                Some(TokenTree::Group(Group::new(
+                    proc_macro::Delimiter::None,
+                    g.stream(),
+                )))
+            }
+            _ => None,
         } {
+            let mut args = TokenStream::new();
+
+            // Make `&{interpolation}, &mut tokens`
+            args.extend::<[TokenTree; _]>([
+                Punct::new('&', Spacing::Alone).into(),
+                interpolation,
+                Punct::new(',', Spacing::Alone).into(),
+                Punct::new('&', Spacing::Alone).into(),
+                Ident::new("mut", Span::call_site()).into(),
+                Ident::new("tokens", Span::call_site()).into(),
+            ]);
+
+            // Make `::parsyng::ToTokens::to_tokens({args});`
+            // Or use parsyng_quote if not in the parsyng crate
+            output.extend::<[TokenTree; _]>([
+                Ident::new("parsyng_quote", Span::call_site()).into(),
+                Punct::new(':', Spacing::Joint).into(),
+                Punct::new(':', Spacing::Alone).into(),
+                Ident::new("ToTokens", Span::call_site()).into(),
+                Punct::new(':', Spacing::Joint).into(),
+                Punct::new(':', Spacing::Alone).into(),
+                Ident::new("to_tokens", Span::call_site()).into(),
+                Group::new(proc_macro::Delimiter::Parenthesis, args).into(),
+                Punct::new(';', Spacing::Alone).into(),
+            ]);
+        } else {
             token_to_construction_code(&mut output, tt);
         }
     }
