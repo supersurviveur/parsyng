@@ -1,0 +1,10 @@
+[package]
+name = "parsyng-proc-macros"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+parsyng-quote = { path = "../parsyng-quote" }

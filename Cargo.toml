@@ -1,0 +1,17 @@
+[package]
+name = "parsyng"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+keywords = ["macros", "proc"]
+categories = ["development-tools::procedural-macro-helpers"]
+
+[dependencies]
+itertools = "0.14.0"
+parsyng-proc-macros = { path = "./crates/parsyng-proc-macros" }
+parsyng-quote = { path = "./crates/parsyng-quote" }
+proc-macro2 = { version = "1", optional = true }
+
+[features]
+proc-macro2 = ["dep:proc-macro2", "parsyng-quote/proc-macro2"]

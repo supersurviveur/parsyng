@@ -1,0 +1,30 @@
+bench: bench-comptime bench-runtime
+
+bench-runtime:
+    cargo bench --features proc-macro2
+
+bench-comptime: bench-comptime-empty bench-comptime-small bench-comptime-big bench-comptime-big-proc-macro2
+
+__bench features: (__bench_impl features features)
+
+__bench_impl features_quote features_parsyng:
+    @echo -e {{ BOLD }}{{ RED }}"\n============ Bench {{ features_parsyng }} quote ============\n"{{ NORMAL }}
+    @cd benches/bench-comptime && \
+        hyperfine --prepare 'cargo clean' \
+        'cargo build --features quote,{{ features_quote }}' \
+        'cargo build --features unsynn,{{ features_quote }}' \
+        'cargo build --features parsyng-quote,{{ features_parsyng }}'
+    @echo -e {{ BOLD }}{{ RED }}"\n============ Bench {{ features_parsyng }} quote (--release) ============\n"{{ NORMAL }}
+    @cd benches/bench-comptime && \
+        hyperfine --prepare 'cargo clean' \
+        'cargo build --release --features quote,{{ features_quote }}' \
+        'cargo build --release --features unsynn,{{ features_quote }}' \
+        'cargo build --release --features parsyng-quote,{{ features_parsyng }}'
+
+bench-comptime-empty: (__bench "empty")
+
+bench-comptime-small: (__bench "small")
+
+bench-comptime-big: (__bench "big")
+
+bench-comptime-big-proc-macro2: (__bench_impl "big" "big,proc-macro2")

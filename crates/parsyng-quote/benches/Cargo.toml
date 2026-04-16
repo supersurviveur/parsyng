@@ -1,0 +1,12 @@
+[package]
+name = "ryn-quote-bench-runtime"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "ryn-quote-bench-runtime"
+path = "main.rs"
+
+[dependencies]
+quote = "1"
+ryn-quote = { path = "../" }
