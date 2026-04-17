@@ -1,10 +1,48 @@
-use proc_macro::{Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
+use proc_macro::{Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 const INTERPOLATION_CHAR: char = '#';
 
 #[proc_macro]
 pub fn parsyng(input: TokenStream) -> TokenStream {
     parse_tokenstream(input)
+}
+
+#[proc_macro]
+pub fn parsyng_spanned(input: TokenStream) -> TokenStream {
+    let mut span = TokenStream::new();
+    let mut stream = input.into_iter();
+    while let Some(tt) = stream.next()
+        && match tt {
+            TokenTree::Punct(ref punct) => punct.as_char() != '=',
+            _ => true,
+        }
+    {
+        span.extend(core::iter::once(tt));
+    }
+
+    let tt = stream.next();
+    if match tt {
+        Some(TokenTree::Punct(ref punct)) => punct.as_char() != '>',
+        _ => false,
+    } {
+        let mut error = TokenStream::new();
+        error.extend::<[TokenTree; _]>([
+            Ident::new("compile_error", Span::call_site()).into(),
+            Punct::new('!', Spacing::Alone).into(),
+            Group::new(proc_macro::Delimiter::Brace, {
+                let mut tk = TokenStream::new();
+                tk.extend([Literal::string(&format!(
+                    "expected '>', found '{}'",
+                    tt.map_or("<eof>".to_string(), |tt| tt.to_string())
+                ))]);
+                tk
+            })
+            .into(),
+        ]);
+        return error;
+    }
+
+    parse_tokenstream(stream.collect())
 }
 
 fn parse_tokenstream(stream: TokenStream) -> TokenStream {
@@ -53,7 +91,6 @@ fn parse_tokenstream(stream: TokenStream) -> TokenStream {
             ]);
 
             // Make `::parsyng::ToTokens::to_tokens({args});`
-            // Or use parsyng_quote if not in the parsyng crate
             output.extend::<[TokenTree; _]>([
                 Ident::new("parsyng_quote", Span::call_site()).into(),
                 Punct::new(':', Spacing::Joint).into(),

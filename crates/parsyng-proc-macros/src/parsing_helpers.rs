@@ -16,7 +16,7 @@ macro_rules! expect_error {
             concat!("expected ", $expected, ", found `<eof>`")
         };
         return parsyng! {
-            compile_error!(#{ error })
+            compile_error!{ #{ error } }
         };
     }};
 }

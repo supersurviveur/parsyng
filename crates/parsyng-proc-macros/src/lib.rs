@@ -6,7 +6,7 @@ mod parsing_helpers;
 
 #[proc_macro_attribute]
 pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut stream = input.into_iter();
+    let mut stream = input.into_iter().peekable();
 
     // Parse the procedural_macro
     // pub fn {macro_ident}({input}: {in_type}) -> {out_type} {
@@ -71,7 +71,15 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
         }
     }
     // {out_type}
-    let out_type = parse_ident!(stream);
+    let mut out_type = TokenStream::new();
+    while let Some(tt) = stream.peek()
+        && !match tt {
+            proc_macro::TokenTree::Group(g) if g.delimiter() == Delimiter::Brace => true,
+            _ => false,
+        }
+    {
+        out_type.extend(core::iter::once(stream.next().unwrap()));
+    }
 
     // Create new function
     let new_macro_ident = format_ident!("__parsyng_{}", macro_ident);
@@ -81,7 +89,14 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
             #[proc_macro]
             pub fn #{ macro_ident }(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut parse_buffer = parsyng::parse::ParseBuffer::new(input);
-                #{ new_macro_ident }(<#{ in_type } as parsyng::parse::Parse>::parse(&mut parse_buffer).unwrap())
+                match <#{ in_type } as parsyng::parse::Parse>::parse(&mut parse_buffer) {
+                    Ok(ok) => #{ new_macro_ident }(ok),
+                    Err(err) => {
+                        let mut output = parsyng::proc_macro::TokenStream::new();
+                        <#{ out_type } as parsyng::ToTokens>::to_tokens(&err, &mut output);
+                        output
+                    }
+                }
             }
         }
     } else {
@@ -89,7 +104,10 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
             #[proc_macro]
             pub fn #{ macro_ident }(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut parse_buffer = parsyng::parse::ParseBuffer::new(input);
-                let result = #{ new_macro_ident }(<#{ in_type } as parsyng::parse::Parse>::parse(&mut parse_buffer).unwrap());
+                let result = match <#{ in_type } as parsyng::parse::Parse>::parse(&mut parse_buffer) {
+                    Ok(ok) => #{ new_macro_ident }(ok),
+                    Err(err) => Err(err),
+                };
                 let mut output = parsyng::proc_macro::TokenStream::new();
                 <#{ out_type } as parsyng::ToTokens>::to_tokens(&result, &mut output);
                 output
@@ -100,6 +118,6 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
     parsyng! {
         #{ new_function }
 
-        fn #{ new_macro_ident }(#{ input }: #{ in_type }) -> #{ out_type } #{ stream }
+        fn #{ new_macro_ident }(#{ input }: #{ in_type }) -> #{ out_type } #{ stream.collect::<TokenStream>() }
     }
 }
