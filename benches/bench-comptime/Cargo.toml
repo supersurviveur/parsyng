@@ -1,0 +1,23 @@
+[package]
+name = "bench-comptime"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = { version = "1", optional = true }
+syn = { version = "2", optional = true, features = ["full"] }
+unsynn = { version = "0.3", optional = true, default-features = false, features = ["proc_macro2"] }
+parsyng = { path = "../../", optional = true }
+
+[features]
+syn = ["dep:syn", "dep:quote"]
+unsynn = ["dep:unsynn"]
+parsyng = ["dep:parsyng"]
+proc-macro2 = ["parsyng/proc-macro2"]
+
+empty = []
+small = []
+big = []

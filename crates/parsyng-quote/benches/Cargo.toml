@@ -1,12 +1,12 @@
 [package]
-name = "ryn-quote-bench-runtime"
+name = "parsyng-quote-bench-runtime"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "ryn-quote-bench-runtime"
+name = "parsyng-quote-bench-runtime"
 path = "main.rs"
 
 [dependencies]
 quote = "1"
-ryn-quote = { path = "../" }
+parsyng-quote = { path = "../" }

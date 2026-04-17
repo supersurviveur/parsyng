@@ -10,6 +10,7 @@ categories = ["development-tools::procedural-macro-helpers"]
 [dependencies]
 parsyng-proc-macros = { path = "./crates/parsyng-proc-macros" }
 parsyng-quote = { path = "./crates/parsyng-quote" }
+unicode-ident = "1"
 proc-macro2 = { version = "1", optional = true }
 
 [features]

@@ -1,7 +1,11 @@
 use core::iter::Peekable;
 
-use crate::{error::Result, proc_macro::TokenTree};
+use crate::{
+    error::Result,
+    proc_macro::{Span, TokenTree},
+};
 
+#[derive(Clone)]
 pub struct ParseBuffer {
     inner: Peekable<crate::proc_macro::token_stream::IntoIter>,
 }
@@ -12,6 +16,10 @@ impl ParseBuffer {
         Self {
             inner: inner.into_iter().peekable(),
         }
+    }
+
+    pub fn span(&mut self) -> Span {
+        self.peek().map_or(Span::call_site(), |tt| tt.span())
     }
 
     pub fn peek(&mut self) -> Option<&TokenTree> {
@@ -43,28 +51,40 @@ impl ParseBuffer {
         })
     }
     pub fn group(&mut self) -> Option<crate::proc_macro::Group> {
-        self.next().and_then(|token| match token {
-            TokenTree::Group(group) => Some(group),
-            _ => None,
-        })
+        match self.peek_group() {
+            Some(_) => match self.next().unwrap() {
+                TokenTree::Group(group) => Some(group),
+                _ => None,
+            },
+            None => None,
+        }
     }
     pub fn ident(&mut self) -> Option<crate::proc_macro::Ident> {
-        self.next().and_then(|token| match token {
-            TokenTree::Ident(ident) => Some(ident),
-            _ => None,
-        })
+        match self.peek_ident() {
+            Some(_) => match self.next().unwrap() {
+                TokenTree::Ident(ident) => Some(ident),
+                _ => None,
+            },
+            None => None,
+        }
     }
     pub fn literal(&mut self) -> Option<crate::proc_macro::Literal> {
-        self.next().and_then(|token| match token {
-            TokenTree::Literal(literal) => Some(literal),
-            _ => None,
-        })
+        match self.peek_literal() {
+            Some(_) => match self.next().unwrap() {
+                TokenTree::Literal(literal) => Some(literal),
+                _ => None,
+            },
+            None => None,
+        }
     }
     pub fn punct(&mut self) -> Option<crate::proc_macro::Punct> {
-        self.next().and_then(|token| match token {
-            TokenTree::Punct(punct) => Some(punct),
-            _ => None,
-        })
+        match self.peek_punct() {
+            Some(_) => match self.next().unwrap() {
+                TokenTree::Punct(punct) => Some(punct),
+                _ => None,
+            },
+            None => None,
+        }
     }
 
     pub fn parse<T: Parse>(&mut self) -> Result<T> {
