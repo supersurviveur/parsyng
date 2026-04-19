@@ -1,8 +1,10 @@
 use core::iter::Peekable;
 
+use parsyng_quote::ToTokens;
+
 use crate::{
     error::Result,
-    proc_macro::{Span, TokenTree},
+    proc_macro::{Span, TokenStream, TokenTree},
 };
 
 #[derive(Clone)]
@@ -102,4 +104,18 @@ impl Iterator for ParseBuffer {
 
 pub trait Parse: Sized {
     fn parse(input: &mut ParseBuffer) -> Result<Self>;
+}
+
+pub struct Nothing;
+
+impl Parse for Nothing {
+    #[inline]
+    fn parse(_input: &mut ParseBuffer) -> Result<Self> {
+        Ok(Self)
+    }
+}
+
+impl ToTokens for Nothing {
+    #[inline]
+    fn to_tokens(&self, _tokens: &mut TokenStream) {}
 }

@@ -13,6 +13,7 @@ pub use sealed::proc_macro;
 pub use proc_macro2 as proc_macro;
 
 pub mod ast;
+pub mod combinator;
 pub mod error;
 pub mod parse;
 pub mod proc_macro_ext;

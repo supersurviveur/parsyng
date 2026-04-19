@@ -11,8 +11,6 @@ __bench_impl features_syn features_parsyng:
     @echo -e {{ BOLD }}{{ RED }}"\n============ Bench {{ features_parsyng }} syn ============\n"{{ NORMAL }}
     @cd benches/bench-comptime && \
         hyperfine --prepare 'cargo clean' \
-        'cargo build --features syn,{{ features_syn }}' \
-        'cargo build --features unsynn,{{ features_syn }}' \
         'cargo build --features parsyng,{{ features_parsyng }}'
     @echo -e {{ BOLD }}{{ RED }}"\n============ Bench {{ features_parsyng }} syn (--release) ============\n"{{ NORMAL }}
     @cd benches/bench-comptime && \
