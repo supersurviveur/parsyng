@@ -8,15 +8,20 @@ macro_rules! parse_ident {
         }
     };
 }
+
 macro_rules! expect_error {
     ($expected:literal, $received:ident) => {{
         let error = if let Some(tt) = $received {
-            &format!(concat!("expected ", $expected, ", found `{}`"), tt)
+            (
+                format!(concat!("expected ", $expected, ", found `{}`"), tt).into(),
+                tt.span(),
+            )
         } else {
-            concat!("expected ", $expected, ", found `<eof>`")
+            (
+                concat!("expected ", $expected, ", found `<eof>`").into(),
+                Span::call_site(),
+            )
         };
-        return parsyng! {
-            compile_error!{ #{ error } }
-        };
+        return Err(error);
     }};
 }

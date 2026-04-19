@@ -1,5 +1,5 @@
 use crate::proc_macro::{Span, TokenStream};
-use parsyng_quote::{ToTokens, parsyng};
+use parsyng_quote::{ToTokens, parsyng_spanned};
 
 #[derive(Debug, Clone)]
 pub enum Diagnostic {
@@ -33,7 +33,7 @@ pub type Result<T> = core::result::Result<T, Diagnostics>;
 impl ToTokens for Diagnostic {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         tokens.extend(match self {
-            Diagnostic::Error(error, span) => parsyng! {
+            Diagnostic::Error(error, span) => parsyng_spanned! { span =>
                 compile_error!{ #{ error } }
             },
         });

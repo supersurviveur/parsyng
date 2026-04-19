@@ -1,0 +1,11 @@
+[package]
+name = "parsyng-bench-runtime"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "parsyng-bench-runtime"
+path = "main.rs"
+
+[dependencies]
+syn = "2"
