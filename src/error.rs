@@ -34,7 +34,7 @@ impl ToTokens for Diagnostic {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         tokens.extend(match self {
             Diagnostic::Error(error, span) => parsyng_spanned! { span =>
-                compile_error!{ #{ error } }
+                compile_error!{ #error }
             },
         });
     }
