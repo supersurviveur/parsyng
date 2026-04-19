@@ -3,8 +3,8 @@ use core::range::Range;
 use crate::{
     ast::identifiers::is_identifier_or_keyword,
     error::{Diagnostics, Result},
-    parse::Parse,
-    proc_macro::Span,
+    parse::{Parse, ParseBuffer},
+    proc_macro::{Span, TokenTree},
 };
 
 #[derive(Debug, Clone)]
@@ -57,7 +57,7 @@ impl LiteralFloat {
 macro_rules! unsigned_integer_impls {
     ($($ty:ty,)*) => {
         $(impl Parse for $ty {
-            fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+            fn parse(input: &mut ParseBuffer) -> Result<Self> {
                 input.parse::<LiteralNumber>().and_then(|lit| {
                     if !lit.suffix().is_empty() && lit.suffix() != stringify!($ty) {
                         return Err(Diagnostics::new_error_spanned(format!(concat!("Expected ", stringify!($ty), ", found `{}`"), lit.suffix()), lit.span()));
@@ -76,7 +76,7 @@ unsigned_integer_impls! {
 }
 
 impl Parse for Literal {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         if let Some(literal) = input.literal() {
             let literal_str = literal.to_string();
 
@@ -106,7 +106,7 @@ impl Parse for Literal {
 }
 
 impl Parse for LiteralNumber {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         if let Some(literal) = input.literal() {
             let literal_str = literal.to_string();
             return parse_integer_literal(literal_str, literal.span());
@@ -116,7 +116,7 @@ impl Parse for LiteralNumber {
 }
 
 impl Parse for LiteralFloat {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         if let Some(literal) = input.literal() {
             let literal_str = literal.to_string();
             return parse_float_literal(literal_str, literal.span());

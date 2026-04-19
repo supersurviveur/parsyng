@@ -4,11 +4,14 @@ use parsyng_quote::ToTokens;
 
 use crate::{
     error::{Diagnostics, Result},
-    parse::Parse,
-    proc_macro::{Ident, Punct, Spacing, Span},
+    parse::{Parse, ParseBuffer},
+    proc_macro::{Ident, Punct, Spacing, Span, TokenTree},
 };
 
-fn parse_keyword(input: &mut crate::parse::ParseBuffer, keyword: &str) -> Result<Ident> {
+fn parse_keyword(
+    input: &mut ParseBuffer,
+    keyword: &str,
+) -> Result<Ident> {
     let span = input.span();
     let mk_error =
         || Diagnostics::new_error_spanned(format!("Expected keyword `{}`", keyword), span);
@@ -192,7 +195,7 @@ pub struct RustKeyword<const K: u8> {
 }
 
 impl<const K: u8> Parse for RustKeyword<K> {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         Ok(Self {
             ident: parse_keyword(input, KEYWORDS[K as usize])?,
         })
@@ -235,7 +238,7 @@ impl<const A: char, const B: char, const C: char> RustPunct3<A, B, C> {
 }
 
 impl<const A: char> Parse for RustPunct1<A> {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let error_span: Span = input.span();
         if let Some(punct1) = input.punct()
             && punct1.as_char() == A
@@ -255,7 +258,7 @@ impl<const A: char> ToTokens for RustPunct1<A> {
     }
 }
 impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let error_span: Span = input.span();
         if let Some(punct1) = input.punct()
             && punct1.as_char() == A
@@ -279,7 +282,7 @@ impl<const A: char, const B: char> ToTokens for RustPunct2<A, B> {
 }
 
 impl<const A: char, const B: char, const C: char> Parse for RustPunct3<A, B, C> {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> Result<Self> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let error_span: Span = input.span();
         if let Some(punct1) = input.punct()
             && punct1.as_char() == A
