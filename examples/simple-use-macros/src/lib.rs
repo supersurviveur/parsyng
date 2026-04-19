@@ -1,12 +1,8 @@
 use parsyng::{Token, error::Result, parsyng};
-use proc_macro::TokenStream;
 
-struct Test {
-    a: Token![match],
-}
 
 #[parsyng::proc_macro]
-pub fn simple_macro(n: Token![&&]) -> Result<TokenStream> {
+pub fn simple_macro(n: Token![match]) -> Result<u8> {
     eprintln!("{:?}", n);
     let tokens = parsyng! {
         let a = true #{ n } false;
@@ -17,5 +13,5 @@ pub fn simple_macro(n: Token![&&]) -> Result<TokenStream> {
     };
     eprintln!("{}", tokens);
     // Err(Diagnostics::new_error("test"))
-    Ok(tokens)
+    Ok(0)
 }
