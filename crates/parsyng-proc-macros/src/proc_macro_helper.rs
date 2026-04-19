@@ -1,94 +1,41 @@
-use std::borrow::Cow;
-
 use parsyng_quote::{format_ident, parsyng};
-use proc_macro::{Delimiter, Span, TokenStream};
+use proc_macro::{Delimiter, TokenStream};
 
-pub fn proc_macro(
-    _args: TokenStream,
-    input: TokenStream,
-) -> Result<TokenStream, (Cow<'static, str>, Span)> {
-    let mut stream = input.into_iter().peekable();
+use crate::{
+    self as parsyng,
+    bootstrap::{self, error::Diagnostics},
+};
 
-    // Parse the procedural_macro
-    // pub fn {macro_ident}({input}: {in_type}) -> {out_type} {
-    //     ...
-    // }
+pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::Result<TokenStream> {
+    let mut stream = bootstrap::parse::ParseBuffer::new(input);
 
-    // pub
-    match stream.next() {
-        Some(proc_macro::TokenTree::Ident(ident)) if ident.to_string() == "pub" => {}
-        other => {
-            return Err((
-                "functions tagged with `#[proc_macro]` must be `pub`".into(),
-                other.map_or(Span::call_site(), |o| o.span()),
-            ));
-        }
-    }
-    // fn
-    match stream.next() {
-        Some(proc_macro::TokenTree::Ident(ident)) if ident.to_string() == "fn" => {}
-        other => {
-            return Err((
-                "missing `fn` for function definition".into(),
-                other.map_or(Span::call_site(), |o| o.span()),
-            ));
-        }
-    }
-    // {macro_ident}
-    let macro_ident = parse_ident!(stream);
-    // ({arguments})
-    let mut arguments = match stream.next() {
-        Some(proc_macro::TokenTree::Group(group))
-            if group.delimiter() == Delimiter::Parenthesis =>
-        {
-            group.stream().into_iter().peekable()
-        }
-        other => {
-            return Err((
-                "expected block".into(),
-                other.map_or(Span::call_site(), |o| o.span()),
-            ));
-        }
-    };
-    // {input}
-    let input = parse_ident!(arguments);
-    // :
-    match arguments.next() {
-        Some(proc_macro::TokenTree::Punct(punct)) if punct.as_char() == ':' => {}
-        other => {
-            expect_error!(":", other)
-        }
-    }
-    // {in_type}
+    stream.parse::<Token![pub]>()?;
+    stream.parse::<Token![fn]>()?;
+    let macro_ident = stream.parse::<proc_macro::Ident>()?;
+    let mut arguments =
+        bootstrap::parse::ParseBuffer::new(stream.parse::<proc_macro::Group>()?.stream());
+    let input_ident = arguments.parse::<proc_macro::Ident>()?;
+    arguments.parse::<Token![:]>()?;
+
     let mut in_type = TokenStream::new();
-    while let Some(tt) = arguments.peek()
+    while let Some(tt) = arguments.next()
         && !match tt {
-            proc_macro::TokenTree::Punct(g) if g.as_char() == ',' => true,
+            proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
             _ => false,
         }
     {
-        in_type.extend(core::iter::once(arguments.next().unwrap()));
+        in_type.extend(Some(tt));
     }
 
-    match arguments.next() {
-        Some(other) => return Err(("Expected end of arguments".into(), other.span())),
-        None => {}
+    if !arguments.is_empty() {
+        return Err(Diagnostics::new_error_spanned(
+            "Expected end of arguments",
+            arguments.span(),
+        ));
     }
 
-    // -
-    match stream.next() {
-        Some(proc_macro::TokenTree::Punct(punct)) if punct.as_char() == '-' => {}
-        other => {
-            expect_error!("-", other)
-        }
-    }
-    match stream.next() {
-        Some(proc_macro::TokenTree::Punct(punct)) if punct.as_char() == '>' => {}
-        other => {
-            expect_error!(">", other)
-        }
-    }
-    // {out_type}
+    stream.parse::<Token![->]>().unwrap();
+
     let mut out_type = TokenStream::new();
     while let Some(tt) = stream.peek()
         && !match tt {
@@ -96,7 +43,7 @@ pub fn proc_macro(
             _ => false,
         }
     {
-        out_type.extend(core::iter::once(stream.next().unwrap()));
+        out_type.extend(Some(stream.next().unwrap()));
     }
 
     // Create new function
@@ -136,6 +83,6 @@ pub fn proc_macro(
     Ok(parsyng! {
         #{ new_function }
 
-        fn #{ new_macro_ident }(#{ input }: #{ in_type }) -> #{ out_type } #{ stream.collect::<TokenStream>() }
+        fn #{ new_macro_ident }(#{ input_ident }: #{ in_type }) -> #{ out_type } #{ stream.collect::<TokenStream>() }
     })
 }

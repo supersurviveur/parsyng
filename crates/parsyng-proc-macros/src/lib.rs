@@ -1,4 +1,3 @@
-use parsyng_quote::parsyng_spanned;
 use proc_macro::TokenStream;
 
 // To parse things more easily, a part of the top-level `parsyng` crate is used as bootstrap.
@@ -7,11 +6,10 @@ use proc_macro::TokenStream;
 mod proc_macro {
     pub(crate) use ::proc_macro::*;
 }
+#[macro_use]
 mod bootstrap;
 use bootstrap::*;
 
-#[macro_use]
-mod parsing_helpers;
 mod derive_parse;
 mod proc_macro_helper;
 
@@ -19,9 +17,11 @@ mod proc_macro_helper;
 pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
     match proc_macro_helper::proc_macro(_args, input) {
         Ok(ok) => ok,
-        Err((err, span)) => parsyng_spanned! { span =>
-            compile_error! { #err }
-        },
+        Err(err) => {
+            let mut tokens = TokenStream::new();
+            parsyng_quote::ToTokens::to_tokens(&err, &mut tokens);
+            tokens
+        }
     }
 }
 
@@ -29,8 +29,10 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn derive_parse(input: TokenStream) -> TokenStream {
     match derive_parse::derive_parse(input) {
         Ok(ok) => ok,
-        Err((err, span)) => parsyng_spanned! { span =>
-            compile_error! { #err }
-        },
+        Err(err) => {
+            let mut tokens = TokenStream::new();
+            parsyng_quote::ToTokens::to_tokens(&err, &mut tokens);
+            tokens
+        }
     }
 }

@@ -24,6 +24,10 @@ impl ParseBuffer {
         self.peek().map_or(Span::call_site(), |tt| tt.span())
     }
 
+    pub fn is_empty(&mut self) -> bool {
+        !self.peek().is_some()
+    }
+
     pub fn peek(&mut self) -> Option<&TokenTree> {
         self.inner.peek()
     }
