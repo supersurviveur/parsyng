@@ -19,20 +19,21 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
 
     let mut in_type = TokenStream::new();
     while let Some(tt) = arguments.next()
-        && !match tt {
-            proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
-            _ => false,
-        }
+        // && !match tt {
+        //     proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
+        //     _ => false,
+        // }
     {
         in_type.extend(Some(tt));
     }
 
-    if !arguments.is_empty() {
-        return Err(Diagnostics::new_error_spanned(
-            "Expected end of arguments",
-            arguments.span(),
-        ));
-    }
+    // TODO, find a way to parse only the first arg, maybe when dependency tree will be inversed
+    // if !arguments.is_empty() {
+    //     return Err(Diagnostics::new_error_spanned(
+    //         "Expected end of arguments",
+    //         arguments.span(),
+    //     ));
+    // }
 
     stream.parse::<Token![->]>().unwrap();
 

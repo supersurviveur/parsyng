@@ -1,15 +1,18 @@
 use core::iter::Peekable;
+use std::collections::VecDeque;
 
 use parsyng_quote::ToTokens;
 
 use crate::{
     error::Result,
-    proc_macro::{Span, TokenStream, TokenTree},
+    proc_macro::{Span, TokenStream, TokenTree, token_stream::IntoIter},
 };
 
 #[derive(Clone)]
 pub struct ParseBuffer {
-    inner: Peekable<crate::proc_macro::token_stream::IntoIter>,
+    inner: Peekable<IntoIter>,
+    depth: u16,
+    forks: Vec<VecDeque<TokenTree>>,
 }
 
 impl ParseBuffer {
@@ -17,6 +20,8 @@ impl ParseBuffer {
     pub fn new(inner: crate::proc_macro::TokenStream) -> Self {
         Self {
             inner: inner.into_iter().peekable(),
+            depth: 0,
+            forks: vec![VecDeque::new(); 2],
         }
     }
 
@@ -29,7 +34,9 @@ impl ParseBuffer {
     }
 
     pub fn peek(&mut self) -> Option<&TokenTree> {
-        self.inner.peek()
+        self.forks[self.depth as usize + 1]
+            .front()
+            .or_else(|| self.inner.peek())
     }
 
     pub fn peek_group(&mut self) -> Option<&crate::proc_macro::Group> {
@@ -93,7 +100,46 @@ impl ParseBuffer {
         }
     }
 
+    pub fn try_advance<T: Parse, F: FnOnce(&mut Self) -> Result<T>>(&mut self, f: F) -> Option<T> {
+        self.depth += 1;
+        self.forks.push(VecDeque::new());
+        match f(self) {
+            Ok(ok) => {
+                self.depth -= 1;
+                // Drop the current saved tokens
+                // If we are not on the main stream, put these tokens in the parent fork
+                let last = self.forks.pop().unwrap();
+                if self.depth != 0 {
+                    let currents = self.forks.pop().unwrap();
+                    self.forks.push(VecDeque::new());
+                    self.forks[self.depth as usize - 1].extend(currents);
+                    self.forks[self.depth as usize - 1].extend(last);
+                }
+                Some(ok)
+            }
+            Err(_) => {
+                self.depth -= 1;
+                // Drop the current saved tokens
+                // If we are not on the main stream, put these tokens in the parent fork
+                let last = self.forks.pop().unwrap();
+                if self.depth != 0 {
+                    self.forks.pop().unwrap();
+                    self.forks.push(VecDeque::new());
+                    self.forks[self.depth as usize - 1].extend(last);
+                }
+                None
+            }
+        }
+    }
+
+    pub fn try_parse<T: Parse>(&mut self) -> Option<T> {
+        self.try_advance(T::parse)
+    }
+
     pub fn parse<T: Parse>(&mut self) -> Result<T> {
+        dbg!(&self.forks);
+        dbg!(&self.depth);
+        dbg!(&self.inner.peek());
         T::parse(self)
     }
 
@@ -107,7 +153,18 @@ impl Iterator for ParseBuffer {
     type Item = TokenTree;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        let result = self.forks[self.depth as usize + 1]
+            .pop_front()
+            .or_else(|| self.inner.next());
+
+        // If we are not on the main stream, push the token in the parent fork.
+        if self.depth != 0
+            && let Some(ref tt) = result
+        {
+            self.forks[self.depth as usize].push_back(tt.clone());
+        }
+
+        result
     }
 }
 
@@ -115,10 +172,9 @@ pub trait Parse: Sized {
     fn parse(input: &mut ParseBuffer) -> Result<Self>;
 }
 
-pub trait Peek: Parse {
-    fn peek(input: &mut ParseBuffer) -> Result<Self>;
-}
+pub trait Peek: Parse {}
 
+#[derive(Clone, Default, Debug)]
 pub struct Nothing;
 
 impl Parse for Nothing {
