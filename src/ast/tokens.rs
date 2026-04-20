@@ -5,13 +5,10 @@ use parsyng_quote::ToTokens;
 use crate::{
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer},
-    proc_macro::{Ident, Punct, Spacing, Span, TokenTree},
+    proc_macro::{Ident, Punct, Spacing, Span},
 };
 
-fn parse_keyword(
-    input: &mut ParseBuffer,
-    keyword: &str,
-) -> Result<Ident> {
+fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
     let span = input.span();
     let mk_error =
         || Diagnostics::new_error_spanned(format!("Expected keyword `{}`", keyword), span);

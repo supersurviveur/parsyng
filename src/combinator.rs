@@ -1,7 +1,6 @@
 use crate::{
     error::Result,
-    parse::{Nothing, Parse, ParseBuffer},
-    proc_macro::TokenTree,
+    parse::{Nothing, Parse, ParseBuffer, Peek},
 };
 
 #[derive(Clone, Default)]
@@ -31,8 +30,13 @@ pub struct Punctuated<T, P> {
     last: Option<T>,
 }
 
-impl<T: Parse, P: Parse> Parse for Punctuated<T, P> {
+impl<T: Parse, P: Peek> Parse for Punctuated<T, P> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        loop {
+            let element = input.parse::<T>()?;
+
+            if let Ok(punct) = input.peek_token::<P>() {}
+        }
         input.parse()
     }
 }

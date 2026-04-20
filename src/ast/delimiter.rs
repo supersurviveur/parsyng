@@ -1,7 +1,7 @@
 use crate::{
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer},
-    proc_macro::{Delimiter, Group, Span, TokenTree},
+    proc_macro::{Delimiter, Group, Span},
 };
 
 use std::ops::{Deref, DerefMut};

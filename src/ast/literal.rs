@@ -4,7 +4,7 @@ use crate::{
     ast::identifiers::is_identifier_or_keyword,
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer},
-    proc_macro::{Span, TokenTree},
+    proc_macro::Span,
 };
 
 #[derive(Debug, Clone)]

@@ -1,5 +1,4 @@
 use core::iter::Peekable;
-use std::collections::VecDeque;
 
 use parsyng_quote::ToTokens;
 
@@ -8,18 +7,9 @@ use crate::{
     proc_macro::{Span, TokenStream, TokenTree},
 };
 
-#[derive(Debug, Clone, Copy)]
-pub enum ParseBufferState {
-    Saving,
-    Advancing,
-    Restoring,
-}
-
 #[derive(Clone)]
 pub struct ParseBuffer {
     inner: Peekable<crate::proc_macro::token_stream::IntoIter>,
-    saved: VecDeque<TokenTree>,
-    state: ParseBufferState,
 }
 
 impl ParseBuffer {
@@ -27,8 +17,6 @@ impl ParseBuffer {
     pub fn new(inner: crate::proc_macro::TokenStream) -> Self {
         Self {
             inner: inner.into_iter().peekable(),
-            saved: VecDeque::new(),
-            state: ParseBufferState::Advancing,
         }
     }
 
@@ -41,18 +29,7 @@ impl ParseBuffer {
     }
 
     pub fn peek(&mut self) -> Option<&TokenTree> {
-        match self.state {
-            ParseBufferState::Saving => self.inner.peek(),
-            ParseBufferState::Restoring => {
-                if let Some(tt) = self.saved.front() {
-                    Some(tt)
-                } else {
-                    // self.state = ParseBufferState::Advancing;
-                    self.inner.peek()
-                }
-            }
-            ParseBufferState::Advancing => self.inner.peek(),
-        }
+        self.inner.peek()
     }
 
     pub fn peek_group(&mut self) -> Option<&crate::proc_macro::Group> {
@@ -119,6 +96,11 @@ impl ParseBuffer {
     pub fn parse<T: Parse>(&mut self) -> Result<T> {
         T::parse(self)
     }
+
+    /// Same as [Self::parse], but guaranteed that if the parsing fails, the stream didn't advanced.
+    pub fn peek_token<T: Peek>(&mut self) -> Result<T> {
+        T::parse(self)
+    }
 }
 
 impl Iterator for ParseBuffer {
@@ -131,6 +113,10 @@ impl Iterator for ParseBuffer {
 
 pub trait Parse: Sized {
     fn parse(input: &mut ParseBuffer) -> Result<Self>;
+}
+
+pub trait Peek: Parse {
+    fn peek(input: &mut ParseBuffer) -> Result<Self>;
 }
 
 pub struct Nothing;

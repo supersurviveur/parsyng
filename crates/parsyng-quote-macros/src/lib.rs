@@ -113,7 +113,7 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
                 Punct::new(';', Spacing::Alone).into(),
             ]);
         } else {
-            token_to_construction_code(&mut output, tt, span.clone());
+            token_to_construction_code(&mut output, tt, span);
         }
     }
 
