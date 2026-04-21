@@ -36,6 +36,9 @@ impl Diagnostics {
     pub fn new_error_spanned<T: Into<String>>(error: T, span: Span) -> Self {
         Self::new(Diagnostic::new(error, span))
     }
+    pub fn join(&mut self, other: Self) {
+        self.0.extend(other.0)
+    }
 }
 
 pub type Result<T> = core::result::Result<T, Diagnostics>;

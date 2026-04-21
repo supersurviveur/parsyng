@@ -1,3 +1,5 @@
+use std::{marker::PhantomData, vec::IntoIter};
+
 use parsyng_quote::ToTokens;
 
 use crate::{
@@ -47,6 +49,17 @@ impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
     }
 }
 
+impl<A: Parse, B: Parse, C: Parse, D: Parse> Parse for (A, B, C, D) {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok((
+            input.parse()?,
+            input.parse()?,
+            input.parse()?,
+            input.parse()?,
+        ))
+    }
+}
+
 impl<T: Peek> Parse for Option<T> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         Ok(input.parse().ok())
@@ -55,12 +68,48 @@ impl<T: Peek> Parse for Option<T> {
 impl<T: Peek> Peek for Option<T> {}
 
 #[derive(Clone, Default, Debug)]
-pub struct Punctuated<T, P> {
+pub struct Greedy;
+#[derive(Clone, Default, Debug)]
+pub struct StopOnError;
+
+#[derive(Clone, Default, Debug)]
+pub struct Punctuated<T, P, OnError = Greedy> {
     content: Vec<(T, P)>,
+    last: Option<T>,
+    _phantom: PhantomData<OnError>,
+}
+
+#[derive(Clone, Default, Debug)]
+pub struct PunctuatedIntoIter<T, P> {
+    content: IntoIter<(T, P)>,
     last: Option<T>,
 }
 
-impl<T: Parse, P: Peek> Parse for Punctuated<T, P> {
+impl<T, P, OnError> IntoIterator for Punctuated<T, P, OnError> {
+    type Item = T;
+
+    type IntoIter = PunctuatedIntoIter<T, P>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PunctuatedIntoIter {
+            content: self.content.into_iter(),
+            last: self.last,
+        }
+    }
+}
+
+impl<T, P> Iterator for PunctuatedIntoIter<T, P> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.content.next() {
+            Some(v) => Some(v.0),
+            None => self.last.take(),
+        }
+    }
+}
+
+impl<T: Parse, P: Peek> Parse for Punctuated<T, P, StopOnError> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let mut content = Vec::new();
         let mut last = None;
@@ -73,10 +122,37 @@ impl<T: Parse, P: Peek> Parse for Punctuated<T, P> {
             }
         }
 
-        Ok(Self { content, last })
+        Ok(Self {
+            content,
+            last,
+            _phantom: PhantomData,
+        })
     }
 }
-impl<T: ToTokens, P: ToTokens> ToTokens for Punctuated<T, P> {
+
+impl<T: Parse, P: Parse> Parse for Punctuated<T, P, Greedy> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut content = Vec::new();
+        let mut last = None;
+
+        while !input.is_empty() {
+            let element = input.parse::<T>()?;
+            if !input.is_empty() {
+                content.push((element, input.parse()?));
+            } else {
+                last = Some(element);
+            }
+        }
+
+        Ok(Self {
+            content,
+            last,
+            _phantom: PhantomData,
+        })
+    }
+}
+
+impl<T: ToTokens, P: ToTokens, OnError> ToTokens for Punctuated<T, P, OnError> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         for pair in &self.content {
             pair.0.to_tokens(tokens);

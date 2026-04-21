@@ -165,3 +165,11 @@ impl<A: ToTokens, B: ToTokens, C: ToTokens> ToTokens for (A, B, C) {
         self.2.to_tokens(tokens);
     }
 }
+impl<A: ToTokens, B: ToTokens, C: ToTokens, D: ToTokens> ToTokens for (A, B, C, D) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.0.to_tokens(tokens);
+        self.1.to_tokens(tokens);
+        self.2.to_tokens(tokens);
+        self.3.to_tokens(tokens);
+    }
+}

@@ -19,8 +19,10 @@ pub mod parse;
 pub mod proc_macro_ext;
 pub mod span;
 
-pub use parsyng_proc_macros::proc_macro;
+pub use parsyng_proc_macros::{Parse, ToTokens, proc_macro};
 pub use parsyng_quote::ToTokens;
+
+pub use parse::Parse;
 
 pub use parsyng_quote;
 
