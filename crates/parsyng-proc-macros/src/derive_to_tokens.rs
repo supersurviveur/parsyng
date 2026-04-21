@@ -2,7 +2,7 @@ use parsyng_quote::{parsyng, proc_macro::TokenStream};
 
 use crate::{ast::item::ItemStruct, bootstrap};
 
-pub fn derive_parse(input: TokenStream) -> bootstrap::error::Result<TokenStream> {
+pub fn derive_to_tokens(input: TokenStream) -> bootstrap::error::Result<TokenStream> {
     let mut stream = bootstrap::parse::ParseBuffer::new(input);
 
     let struct_item = stream.parse::<ItemStruct>()?;
@@ -10,16 +10,14 @@ pub fn derive_parse(input: TokenStream) -> bootstrap::error::Result<TokenStream>
     let mut fields = vec![];
     for field in struct_item.fields().clone() {
         fields.push(parsyng! {
-            #{ field.ident() }: input.parse()?,
+            self.#{ field.ident() }.to_tokens(tokens);
         });
     }
 
     Ok(parsyng! {
-        impl Parse for #{ struct_item.ident() } {
-            fn parse(input: &mut parsyng::parse::ParseBuffer) -> parsyng::error::Result<Self> {
-                Ok(Self {
-                    #fields
-                })
+        impl ToTokens for #{ struct_item.ident() } {
+            fn to_tokens(&self, tokens: &mut parsyng::proc_macro::TokenStream) {
+                #fields
             }
         }
     })

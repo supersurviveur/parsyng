@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use parsyng_quote::ToTokens;
 
 use crate::{
@@ -16,6 +18,14 @@ pub enum Item {
 pub struct VisItem<T> {
     visibility: Visibility,
     item: T,
+}
+
+impl<T> Deref for VisItem<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.item
+    }
 }
 
 impl<T: Parse> Parse for VisItem<T> {

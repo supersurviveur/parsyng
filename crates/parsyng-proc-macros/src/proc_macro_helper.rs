@@ -21,6 +21,14 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
     //     _ => false,
     // }
     {
+        if arguments.is_empty()
+            && match tt {
+                proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
+                _ => false,
+            }
+        {
+            break;
+        }
         in_type.extend(Some(tt));
     }
 

@@ -202,3 +202,9 @@ impl ToTokens for Nothing {
     #[inline]
     fn to_tokens(&self, _tokens: &mut TokenStream) {}
 }
+
+impl<T: Parse> Parse for Box<T> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok(Box::new(input.parse()?))
+    }
+}

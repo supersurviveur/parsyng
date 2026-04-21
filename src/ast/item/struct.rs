@@ -4,6 +4,7 @@ use crate::{
     ast::{
         delimiter::Braced,
         tokens::{Colon, Comma, StructKeyword},
+        r#type::Type,
         visibility::Visibility,
     },
     combinator::Punctuated,
@@ -16,6 +17,15 @@ pub struct Struct {
     struct_token: StructKeyword,
     struct_ident: Ident,
     fields: Braced<Punctuated<StructField, Comma>>,
+}
+
+impl Struct {
+    pub fn ident(&self) -> &Ident {
+        &self.struct_ident
+    }
+    pub fn fields(&self) -> &Punctuated<StructField, Comma> {
+        &self.fields
+    }
 }
 
 impl Parse for Struct {
@@ -41,6 +51,13 @@ pub struct StructField {
     visibility: Visibility,
     field_ident: Ident,
     colon_token: Colon,
+    ty: Type,
+}
+
+impl StructField {
+    pub fn ident(&self) -> &Ident {
+        &self.field_ident
+    }
 }
 
 impl Parse for StructField {
@@ -49,6 +66,7 @@ impl Parse for StructField {
             visibility: input.parse()?,
             field_ident: input.parse()?,
             colon_token: input.parse()?,
+            ty: input.parse()?,
         })
     }
 }
@@ -57,5 +75,6 @@ impl ToTokens for StructField {
         self.visibility.to_tokens(tokens);
         self.field_ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
+        self.ty.to_tokens(tokens);
     }
 }

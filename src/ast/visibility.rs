@@ -44,7 +44,10 @@ impl Parse for Visibility {
                         Parenthesized::new(input.group().unwrap(), (in_token, path)),
                     ))
                 } else {
-                    Err(Diagnostics::new_error("TODO !"))
+                    Err(Diagnostics::new_error_spanned(
+                        "Expected `in`, `crate` or `self`",
+                        input.span(),
+                    ))
                 }
             } else {
                 Ok(Self::Public(pub_token))
