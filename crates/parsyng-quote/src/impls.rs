@@ -145,3 +145,23 @@ impl<T: ToTokens, E: ToTokens> ToTokens for Result<T, E> {
         }
     }
 }
+impl<T: ToTokens> ToTokens for Vec<T> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        for x in self {
+            x.to_tokens(tokens);
+        }
+    }
+}
+impl<A: ToTokens, B: ToTokens> ToTokens for (A, B) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.0.to_tokens(tokens);
+        self.1.to_tokens(tokens);
+    }
+}
+impl<A: ToTokens, B: ToTokens, C: ToTokens> ToTokens for (A, B, C) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.0.to_tokens(tokens);
+        self.1.to_tokens(tokens);
+        self.2.to_tokens(tokens);
+    }
+}

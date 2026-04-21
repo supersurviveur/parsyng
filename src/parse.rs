@@ -1,18 +1,15 @@
-use core::iter::Peekable;
-use std::collections::VecDeque;
+use core::iter;
 
 use parsyng_quote::ToTokens;
 
 use crate::{
     error::Result,
-    proc_macro::{Span, TokenStream, TokenTree, token_stream::IntoIter},
+    proc_macro::{Group, Ident, Punct, Span, TokenStream, TokenTree, token_stream::IntoIter},
 };
 
 #[derive(Clone)]
 pub struct ParseBuffer {
-    inner: Peekable<IntoIter>,
-    depth: u16,
-    forks: Vec<VecDeque<TokenTree>>,
+    inner: iter::Peekable<IntoIter>,
 }
 
 impl ParseBuffer {
@@ -20,8 +17,6 @@ impl ParseBuffer {
     pub fn new(inner: crate::proc_macro::TokenStream) -> Self {
         Self {
             inner: inner.into_iter().peekable(),
-            depth: 0,
-            forks: vec![VecDeque::new(); 2],
         }
     }
 
@@ -34,12 +29,10 @@ impl ParseBuffer {
     }
 
     pub fn peek(&mut self) -> Option<&TokenTree> {
-        self.forks[self.depth as usize + 1]
-            .front()
-            .or_else(|| self.inner.peek())
+        self.inner.peek()
     }
 
-    pub fn peek_group(&mut self) -> Option<&crate::proc_macro::Group> {
+    pub fn peek_group(&mut self) -> Option<&Group> {
         self.peek().and_then(|token| match token {
             TokenTree::Group(group) => Some(group),
             _ => None,
@@ -63,7 +56,7 @@ impl ParseBuffer {
             _ => None,
         })
     }
-    pub fn group(&mut self) -> Option<crate::proc_macro::Group> {
+    pub fn group(&mut self) -> Option<Group> {
         match self.peek_group() {
             Some(_) => match self.next().unwrap() {
                 TokenTree::Group(group) => Some(group),
@@ -72,6 +65,18 @@ impl ParseBuffer {
             None => None,
         }
     }
+    // pub fn group_and_then<T, F: FnOnce(&Group) -> Result<Option<T>>>(
+    //     &mut self,
+    //     f: F,
+    // ) -> Option<(Group, T)> {
+    //     match self.peek_group() {
+    //         Some(group) => match f(group) {
+    //             Ok(value) => Some((self.group().unwrap(), value)),
+    //             Err(e) => e,
+    //         },
+    //         _ => None,
+    //     }
+    // }
     pub fn ident(&mut self) -> Option<crate::proc_macro::Ident> {
         match self.peek_ident() {
             Some(_) => match self.next().unwrap() {
@@ -79,6 +84,18 @@ impl ParseBuffer {
                 _ => None,
             },
             None => None,
+        }
+    }
+    pub fn ident_and<F: FnOnce(&Ident) -> bool>(
+        &mut self,
+        f: F,
+    ) -> Option<crate::proc_macro::Ident> {
+        match self.peek_ident() {
+            Some(ident) if f(ident) => match self.next().unwrap() {
+                TokenTree::Ident(ident) => Some(ident),
+                _ => None,
+            },
+            _ => None,
         }
     }
     pub fn literal(&mut self) -> Option<crate::proc_macro::Literal> {
@@ -99,52 +116,40 @@ impl ParseBuffer {
             None => None,
         }
     }
-
-    pub fn try_advance<T: Parse, F: FnOnce(&mut Self) -> Result<T>>(&mut self, f: F) -> Option<T> {
-        self.depth += 1;
-        self.forks.push(VecDeque::new());
-        match f(self) {
-            Ok(ok) => {
-                self.depth -= 1;
-                // Drop the current saved tokens
-                // If we are not on the main stream, put these tokens in the parent fork
-                let last = self.forks.pop().unwrap();
-                if self.depth != 0 {
-                    let currents = self.forks.pop().unwrap();
-                    self.forks.push(VecDeque::new());
-                    self.forks[self.depth as usize - 1].extend(currents);
-                    self.forks[self.depth as usize - 1].extend(last);
-                }
-                Some(ok)
-            }
-            Err(_) => {
-                self.depth -= 1;
-                // Drop the current saved tokens
-                // If we are not on the main stream, put these tokens in the parent fork
-                let last = self.forks.pop().unwrap();
-                if self.depth != 0 {
-                    self.forks.pop().unwrap();
-                    self.forks.push(VecDeque::new());
-                    self.forks[self.depth as usize - 1].extend(last);
-                }
-                None
-            }
+    pub fn punct_and<F: FnOnce(&Punct) -> bool>(
+        &mut self,
+        f: F,
+    ) -> Option<crate::proc_macro::Punct> {
+        match self.peek_punct() {
+            Some(punct) if f(punct) => match self.next().unwrap() {
+                TokenTree::Punct(punct) => Some(punct),
+                _ => None,
+            },
+            _ => None,
         }
     }
 
-    pub fn try_parse<T: Parse>(&mut self) -> Option<T> {
+    pub fn try_advance<T: Parse, F: FnOnce(&mut Self) -> Result<T>>(&mut self, f: F) -> Result<T> {
+        let mut fork = self.clone();
+        match f(&mut fork) {
+            Ok(ok) => {
+                *self = fork;
+                Ok(ok)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn try_parse<T: Parse>(&mut self) -> Result<T> {
         self.try_advance(T::parse)
     }
 
     pub fn parse<T: Parse>(&mut self) -> Result<T> {
-        dbg!(&self.forks);
-        dbg!(&self.depth);
-        dbg!(&self.inner.peek());
         T::parse(self)
     }
 
     /// Same as [Self::parse], but guaranteed that if the parsing fails, the stream didn't advanced.
-    pub fn peek_token<T: Peek>(&mut self) -> Result<T> {
+    pub fn peek_parse<T: Peek>(&mut self) -> Result<T> {
         T::parse(self)
     }
 }
@@ -153,18 +158,7 @@ impl Iterator for ParseBuffer {
     type Item = TokenTree;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let result = self.forks[self.depth as usize + 1]
-            .pop_front()
-            .or_else(|| self.inner.next());
-
-        // If we are not on the main stream, push the token in the parent fork.
-        if self.depth != 0
-            && let Some(ref tt) = result
-        {
-            self.forks[self.depth as usize].push_back(tt.clone());
-        }
-
-        result
+        self.inner.next()
     }
 }
 
@@ -173,6 +167,26 @@ pub trait Parse: Sized {
 }
 
 pub trait Peek: Parse {}
+
+pub struct Peekable<T> {
+    inner: T,
+}
+
+impl<T> Peekable<T> {
+    pub fn inner(self) -> T {
+        self.inner
+    }
+}
+
+impl<T: Parse> Parse for Peekable<T> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok(Self {
+            inner: input.try_parse()?,
+        })
+    }
+}
+
+impl<T: Parse> Peek for Peekable<T> {}
 
 #[derive(Clone, Default, Debug)]
 pub struct Nothing;

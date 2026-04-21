@@ -2,13 +2,23 @@ use crate::proc_macro::{Span, TokenStream};
 use parsyng_quote::{ToTokens, parsyng_spanned};
 
 #[derive(Debug, Clone)]
-pub enum Diagnostic {
-    Error(String, Span),
+pub struct Diagnostic {
+    content: String,
+    span: Span,
 }
 
 #[derive(Debug, Clone)]
 pub struct Diagnostics(Vec<Diagnostic>);
 
+impl Diagnostic {
+    #[must_use]
+    pub fn new<T: Into<String>>(content: T, span: Span) -> Self {
+        Self {
+            content: content.into(),
+            span,
+        }
+    }
+}
 impl Diagnostics {
     #[must_use]
     pub fn empty() -> Self {
@@ -20,11 +30,11 @@ impl Diagnostics {
     }
     #[must_use]
     pub fn new_error<T: Into<String>>(error: T) -> Self {
-        Self::new(Diagnostic::Error(error.into(), Span::call_site()))
+        Self::new(Diagnostic::new(error, Span::call_site()))
     }
     #[must_use]
     pub fn new_error_spanned<T: Into<String>>(error: T, span: Span) -> Self {
-        Self::new(Diagnostic::Error(error.into(), span))
+        Self::new(Diagnostic::new(error, span))
     }
 }
 
@@ -32,10 +42,8 @@ pub type Result<T> = core::result::Result<T, Diagnostics>;
 
 impl ToTokens for Diagnostic {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        tokens.extend(match self {
-            Diagnostic::Error(error, span) => parsyng_spanned! { span =>
-                compile_error!{ #error }
-            },
+        tokens.extend(parsyng_spanned! { self.span =>
+            compile_error!{ #{ self.content } }
         });
     }
 }

@@ -27,7 +27,11 @@ pub fn parsyng_spanned(input: TokenStream) -> TokenStream {
     } {
         let mut error = TokenStream::new();
         error.extend::<[TokenTree; _]>([
-            Ident::new("compile_error", Span::call_site()).into(),
+            Ident::new(
+                "compile_error",
+                tt.clone().map_or(Span::call_site(), |tt| tt.span()),
+            )
+            .into(),
             Punct::new('!', Spacing::Alone).into(),
             Group::new(proc_macro::Delimiter::Brace, {
                 let mut tk = TokenStream::new();
