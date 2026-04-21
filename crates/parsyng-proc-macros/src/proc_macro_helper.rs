@@ -1,10 +1,7 @@
 use parsyng_quote::{format_ident, parsyng};
 use proc_macro::{Delimiter, TokenStream};
 
-use crate::{
-    self as parsyng,
-    bootstrap::{self, error::Diagnostics},
-};
+use crate::bootstrap;
 
 pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::Result<TokenStream> {
     let mut stream = bootstrap::parse::ParseBuffer::new(input);
@@ -19,10 +16,10 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
 
     let mut in_type = TokenStream::new();
     while let Some(tt) = arguments.next()
-        // && !match tt {
-        //     proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
-        //     _ => false,
-        // }
+    // && !match tt {
+    //     proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
+    //     _ => false,
+    // }
     {
         in_type.extend(Some(tt));
     }

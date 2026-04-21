@@ -2,7 +2,7 @@ use parsyng_quote::ToTokens;
 
 use crate::{
     error::Result,
-    parse::{Nothing, Parse, ParseBuffer},
+    parse::{Nothing, Parse, ParseBuffer, Peek},
 };
 
 #[derive(Clone, Default, Debug)]
@@ -36,6 +36,23 @@ impl<A: ToTokens, B: ToTokens, C: ToTokens, D: ToTokens, E: ToTokens> ToTokens
         self.fifth.to_tokens(tokens);
     }
 }
+impl<A: Parse, B: Parse> Parse for (A, B) {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok((input.parse()?, input.parse()?))
+    }
+}
+impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok((input.parse()?, input.parse()?, input.parse()?))
+    }
+}
+
+impl<T: Peek> Parse for Option<T> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok(input.parse().ok())
+    }
+}
+impl<T: Peek> Peek for Option<T> {}
 
 #[derive(Clone, Default, Debug)]
 pub struct Punctuated<T, P> {
@@ -43,12 +60,12 @@ pub struct Punctuated<T, P> {
     last: Option<T>,
 }
 
-impl<T: Parse, P: Parse> Parse for Punctuated<T, P> {
+impl<T: Parse, P: Peek> Parse for Punctuated<T, P> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let mut content = Vec::new();
         let mut last = None;
-        while let Some(element) = input.try_advance(|input| input.parse::<T>()) {
-            if let Some(punct) = input.try_advance(|input| input.parse::<P>()) {
+        while let Ok(element) = input.try_advance(|input| input.parse::<T>()) {
+            if let Ok(punct) = input.peek_parse() {
                 content.push((element, punct));
             } else {
                 last = Some(element);
@@ -66,5 +83,15 @@ impl<T: ToTokens, P: ToTokens> ToTokens for Punctuated<T, P> {
             pair.1.to_tokens(tokens);
         }
         self.last.to_tokens(tokens);
+    }
+}
+impl<T: Parse> Parse for Vec<T> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut content = Vec::new();
+        while let Ok(element) = input.try_advance(|input| input.parse::<T>()) {
+            content.push(element);
+        }
+
+        Ok(content)
     }
 }

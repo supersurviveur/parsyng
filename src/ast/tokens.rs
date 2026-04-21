@@ -4,7 +4,7 @@ use parsyng_quote::ToTokens;
 
 use crate::{
     error::{Diagnostics, Result},
-    parse::{Parse, ParseBuffer},
+    parse::{Parse, ParseBuffer, Peek},
     proc_macro::{Ident, Punct, Spacing, Span},
 };
 
@@ -13,14 +13,10 @@ fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
     let mk_error =
         || Diagnostics::new_error_spanned(format!("Expected keyword `{}`", keyword), span);
 
-    input.ident().ok_or_else(mk_error).and_then(|ident| {
-        #[allow(clippy::cmp_owned)]
-        if ident.to_string() == keyword {
-            Ok(ident)
-        } else {
-            Err(mk_error())
-        }
-    })
+    #[allow(clippy::cmp_owned)]
+    input
+        .ident_and(|ident| ident.to_string() == keyword)
+        .ok_or_else(mk_error)
 }
 
 macro_rules! make_tokens {
@@ -29,15 +25,18 @@ macro_rules! make_tokens {
         macro_rules! Token {
             $(
                 ($keyword) => {
-                    parsyng::ast::tokens::$keyword_name
+                    $crate::ast::tokens::$keyword_name
                 };
             )*
             $(
                 ($punct) => {
-                    parsyng::ast::tokens::$punct_name
+                    $crate::ast::tokens::$punct_name
                 };
             )*
         }
+
+        #[allow(unused_imports)]
+        pub(crate) use Token;
 
         make_keywords! {
             $($keyword $i => $keyword_name)*
@@ -121,7 +120,7 @@ make_tokens! {
     Self     36 => SelfType
     self     37 => SelfValue
     static   38 => Static
-    struct   39 => Struct
+    struct   39 => StructKeyword
     super    40 => Super
     trait    41 => Trait
     try      42 => Try
@@ -198,6 +197,7 @@ impl<const K: u8> Parse for RustKeyword<K> {
         })
     }
 }
+impl<const K: u8> Peek for RustKeyword<K> {}
 impl<const K: u8> ToTokens for RustKeyword<K> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         tokens.extend(Some(self.ident.clone()));
@@ -237,9 +237,7 @@ impl<const A: char, const B: char, const C: char> RustPunct3<A, B, C> {
 impl<const A: char> Parse for RustPunct1<A> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let error_span: Span = input.span();
-        if let Some(punct1) = input.punct()
-            && punct1.as_char() == A
-        {
+        if let Some(punct1) = input.punct_and(|punct| punct.as_char() == A) {
             return Ok(Self([punct1]));
         }
         Err(Diagnostics::new_error_spanned(
@@ -248,6 +246,7 @@ impl<const A: char> Parse for RustPunct1<A> {
         ))
     }
 }
+impl<const A: char> Peek for RustPunct1<A> {}
 
 impl<const A: char> ToTokens for RustPunct1<A> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
