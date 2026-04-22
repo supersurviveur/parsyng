@@ -1,10 +1,11 @@
 use parsyng_quote::{format_ident, parsyng};
-use proc_macro::{Delimiter, TokenStream};
+use proc_macro::{Delimiter, Ident, TokenStream};
 
-use crate::bootstrap;
+use crate::{bootstrap, dbg_macros, error::Diagnostics};
 
-pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::Result<TokenStream> {
+pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Result<TokenStream> {
     let mut stream = bootstrap::parse::ParseBuffer::new(input);
+    let mut args = bootstrap::parse::ParseBuffer::new(args);
 
     stream.parse::<Token![pub]>()?;
     stream.parse::<Token![fn]>()?;
@@ -15,12 +16,7 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
     arguments.parse::<Token![:]>()?;
 
     let mut in_type = TokenStream::new();
-    while let Some(tt) = arguments.next()
-    // && !match tt {
-    //     proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
-    //     _ => false,
-    // }
-    {
+    while let Some(tt) = arguments.next() {
         if arguments.is_empty()
             && match tt {
                 proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
@@ -31,14 +27,6 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
         }
         in_type.extend(Some(tt));
     }
-
-    // TODO, find a way to parse only the first arg, maybe when dependency tree will be inversed
-    // if !arguments.is_empty() {
-    //     return Err(Diagnostics::new_error_spanned(
-    //         "Expected end of arguments",
-    //         arguments.span(),
-    //     ));
-    // }
 
     stream.parse::<Token![->]>().unwrap();
 
@@ -55,13 +43,31 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
     // Create new function
     let new_macro_ident = format_ident!("__parsyng_{}", macro_ident);
 
+    let dbg = if !args.is_empty() {
+        let ident = args.parse::<Ident>()?;
+        if ident.to_string() == "debug" {
+            dbg_macros()
+        } else {
+            return Err(Diagnostics::new_error_spanned(
+                "Expected `debug` or no arguments.",
+                ident.span(),
+            ));
+        }
+    } else {
+        TokenStream::new()
+    };
+
     let new_function = if out_type.to_string() == "TokenStream" {
         parsyng! {
             #[proc_macro]
             pub fn #{ macro_ident }(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut parse_buffer = parsyng::parse::ParseBuffer::new(input);
                 match <#{ in_type } as parsyng::parse::Parse>::parse(&mut parse_buffer) {
-                    Ok(ok) => #{ new_macro_ident }(ok),
+                    Ok(ok) => {
+                        let output = #{ new_macro_ident }(ok);
+                        #dbg
+                        output
+                    },
                     Err(err) => {
                         let mut output = parsyng::proc_macro::TokenStream::new();
                         <#{ out_type } as parsyng::ToTokens>::to_tokens(&err, &mut output);
@@ -81,6 +87,7 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> bootstrap::error::R
                 };
                 let mut output = parsyng::proc_macro::TokenStream::new();
                 <#{ out_type } as parsyng::ToTokens>::to_tokens(&result, &mut output);
+                #dbg
                 output
             }
         }

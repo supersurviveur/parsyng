@@ -14,6 +14,14 @@ mod derive_parse;
 mod derive_to_tokens;
 mod proc_macro_helper;
 
+pub(crate) fn dbg_macros() -> TokenStream {
+    use parsyng_quote::parsyng;
+
+    parsyng! {
+        parsyng::debug_stream(&output);
+    }
+}
+
 #[proc_macro_attribute]
 pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
     match proc_macro_helper::proc_macro(_args, input) {

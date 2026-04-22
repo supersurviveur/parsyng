@@ -8,14 +8,16 @@ pub fn derive_parse(input: TokenStream) -> bootstrap::error::Result<TokenStream>
     let struct_item = stream.parse::<ItemStruct>()?;
 
     let mut fields = vec![];
-    for field in struct_item.fields().clone() {
-        fields.push(parsyng! {
-            #{ field.ident() }: input.parse()?,
-        });
+    if let Some(struct_fields) = struct_item.fields() {
+        for field in struct_fields.clone() {
+            fields.push(parsyng! {
+                #{ field.ident() }: input.parse()?,
+            });
+        }
     }
 
     Ok(parsyng! {
-        impl Parse for #{ struct_item.ident() } {
+        impl #{ struct_item.generic_parameters() } Parse for #{ struct_item.ident() } #{ struct_item.generic_parameters() } {
             fn parse(input: &mut parsyng::parse::ParseBuffer) -> parsyng::error::Result<Self> {
                 Ok(Self {
                     #fields

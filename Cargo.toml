@@ -11,7 +11,11 @@ categories = ["development-tools::procedural-macro-helpers"]
 parsyng-proc-macros = { path = "./crates/parsyng-proc-macros" }
 parsyng-quote = { path = "./crates/parsyng-quote" }
 unicode-ident = "1"
+
+# Optional dependencies
 proc-macro2 = { version = "1", optional = true }
+toolchain_find = { version = "0.4", optional = true }
 
 [features]
 proc-macro2 = ["dep:proc-macro2", "parsyng-quote/proc-macro2"]
+debug-pretty = ["dep:toolchain_find"]
