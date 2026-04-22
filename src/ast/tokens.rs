@@ -5,7 +5,7 @@ use parsyng_quote::ToTokens;
 use crate::{
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer, Peek},
-    proc_macro::{Ident, Punct, Spacing, Span},
+    proc_macro::{Ident, Punct, Span},
 };
 
 fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
@@ -49,7 +49,6 @@ macro_rules! make_tokens {
 }
 macro_rules! make_puncts {
     (@type $a:literal) => {
-
         RustPunct1<$a>
     };
     (@type $a:literal $b:literal) => {
@@ -137,52 +136,53 @@ make_tokens! {
 
     @puncts
 
-    &    '&'           => And        /// bitwise and logical AND, borrow, references, reference patterns
-    &&   '&', '&'      => AndAnd     /// lazy AND, borrow, references, reference patterns
-    &=   '&', '='      => AndEq      /// bitwise AND assignment
-    @    '@'           => At         /// subpattern binding
-    ^    '^'           => Caret      /// bitwise and logical XOR
-    ^=   '^', '='      => CaretEq    /// bitwise XOR assignment
-    :    ':'           => Colon      /// various separators
-    ,    ','           => Comma      /// various separators
-    $    '$'           => Dollar     /// macros
-    .    '.'           => Dot        /// field access, tuple index
-    ..   '.', '.'      => DotDot     /// range, struct expressions, patterns, range patterns
-    ...  '.', '.', '.' => DotDotDot  /// variadic functions, range patterns
-    ..=  '.', '.', '=' => DotDotEq   /// inclusive range, range patterns
-    =    '='           => Eq         /// assignment, attributes, various type definitions
-    ==   '=', '='      => EqEq       /// equal
-    =>   '=', '>'      => FatArrow   /// match arms, macros
-    >=   '>', '='      => Ge         /// greater than or equal to, generics
-    >    '>'           => Gt         /// greater than, generics, paths
-    <-   '<', '-'      => LArrow     /// unused
-    <=   '<', '='      => Le         /// less than or equal to
-    <    '<'           => Lt         /// less than, generics, paths
-    -    '-'           => Minus      /// subtraction, negation
-    -=   '-', '='      => MinusEq    /// subtraction assignment
-    !=   '!', '='      => Ne         /// not equal
-     !    '!'          => Not        /// bitwise and logical NOT, macro calls, inner attributes, never type, negative impls
-    |    '|'           => Or         /// bitwise and logical OR, closures, patterns in match, if let, and while let
-    |=   '|', '='      => OrEq       /// bitwise OR assignment
-    ||   '|', '|'      => OrOr       /// lazy OR, closures
-    ::   ':', ':'      => PathSep    /// path separator
-    %    '%'           => Percent    /// remainder
-    %=   '%', '='      => PercentEq  /// remainder assignment
-    +    '+'           => Plus       /// addition, trait bounds, macro Kleene matcher
-    +=   '+', '='      => PlusEq     /// addition assignment
-    #    '#'           => Pound      /// attributes
-    ?    '?'           => Question   /// question mark operator, questionably sized, macro Kleene matcher
-    ->   '-', '>'      => RArrow     /// function return type, closure return type, function pointer type
-    ;    ';'           => Semi       /// terminator for various items and statements, array types
-    <<   '<', '<'      => Shl        /// shift left, nested generics
-    <<=  '<', '<', '=' => ShlEq      /// shift left assignment
-    >>   '>', '>'      => Shr        /// shift right, nested generics
-    >>=  '>', '>', '=' => ShrEq      /// shift right assignment, nested generics
-    /    '/'           => Slash      /// division
-    /=   '/', '='      => SlashEq    /// division assignment
-    *    '*'           => Star       /// multiplication, dereference, raw pointers, macro Kleene matcher, use wildcards
-    *=   '*', '='      => StarEq     /// multiplication assignment
-    ~    '~'           => Tilde      /// unused since before Rust 1.0
+    &     '&'           => And        /// bitwise and logical AND, borrow, references, reference patterns
+    &&    '&', '&'      => AndAnd     /// lazy AND, borrow, references, reference patterns
+    &=    '&', '='      => AndEq      /// bitwise AND assignment
+    @     '@'           => At         /// subpattern binding
+    ^     '^'           => Caret      /// bitwise and logical XOR
+    ^=    '^', '='      => CaretEq    /// bitwise XOR assignment
+    :     ':'           => Colon      /// various separators
+    ,     ','           => Comma      /// various separators
+    $     '$'           => Dollar     /// macros
+    .     '.'           => Dot        /// field access, tuple index
+    ..    '.', '.'      => DotDot     /// range, struct expressions, patterns, range patterns
+    ...   '.', '.', '.' => DotDotDot  /// variadic functions, range patterns
+    ..=   '.', '.', '=' => DotDotEq   /// inclusive range, range patterns
+    =     '='           => Eq         /// assignment, attributes, various type definitions
+    ==    '=', '='      => EqEq       /// equal
+    =>    '=', '>'      => FatArrow   /// match arms, macros
+    >=    '>', '='      => Ge         /// greater than or equal to, generics
+    >     '>'           => Gt         /// greater than, generics, paths
+    <-    '<', '-'      => LArrow     /// unused
+    <=    '<', '='      => Le         /// less than or equal to
+    <     '<'           => Lt         /// less than, generics, paths
+    -     '-'           => Minus      /// subtraction, negation
+    -=    '-', '='      => MinusEq    /// subtraction assignment
+    !=    '!', '='      => Ne         /// not equal
+    !     '!'           => Not        /// bitwise and logical NOT, macro calls, inner attributes, never type, negative impls
+    |     '|'           => Or         /// bitwise and logical OR, closures, patterns in match, if let, and while let
+    |=    '|', '='      => OrEq       /// bitwise OR assignment
+    ||    '|', '|'      => OrOr       /// lazy OR, closures
+    ::    ':', ':'      => PathSep    /// path separator
+    %     '%'           => Percent    /// remainder
+    %=    '%', '='      => PercentEq  /// remainder assignment
+    +     '+'           => Plus       /// addition, trait bounds, macro Kleene matcher
+    +=    '+', '='      => PlusEq     /// addition assignment
+    #     '#'           => Pound      /// attributes
+    ?     '?'           => Question   /// question mark operator, questionably sized, macro Kleene matcher
+    ->    '-', '>'      => RArrow     /// function return type, closure return type, function pointer type
+    ;     ';'           => Semicolon  /// terminator for various items and statements, array types
+    <<    '<', '<'      => Shl        /// shift left, nested generics
+    <<=   '<', '<', '=' => ShlEq      /// shift left assignment
+    >>    '>', '>'      => Shr        /// shift right, nested generics
+    >>=   '>', '>', '=' => ShrEq      /// shift right assignment, nested generics
+    /     '/'           => Slash      /// division
+    /=    '/', '='      => SlashEq    /// division assignment
+    *     '*'           => Star       /// multiplication, dereference, raw pointers, macro Kleene matcher, use wildcards
+    *=    '*', '='      => StarEq     /// multiplication assignment
+    ~     '~'           => Tilde      /// unused since before Rust 1.0
+    quote '\''          => Quote      /// single quotes, used in lifetimes
 }
 
 #[derive(Debug, Clone)]
@@ -250,7 +250,7 @@ impl<const A: char> Peek for RustPunct1<A> {}
 
 impl<const A: char> ToTokens for RustPunct1<A> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
-        Punct::new(A, Spacing::Alone).to_tokens(tokens);
+        self.0[0].to_tokens(tokens);
     }
 }
 impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
@@ -272,8 +272,8 @@ impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
 
 impl<const A: char, const B: char> ToTokens for RustPunct2<A, B> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
-        Punct::new(A, Spacing::Joint).to_tokens(tokens);
-        Punct::new(B, Spacing::Alone).to_tokens(tokens);
+        self.0[0].to_tokens(tokens);
+        self.0[1].to_tokens(tokens);
     }
 }
 
@@ -298,8 +298,8 @@ impl<const A: char, const B: char, const C: char> Parse for RustPunct3<A, B, C> 
 
 impl<const A: char, const B: char, const C: char> ToTokens for RustPunct3<A, B, C> {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
-        Punct::new(A, Spacing::Joint).to_tokens(tokens);
-        Punct::new(B, Spacing::Joint).to_tokens(tokens);
-        Punct::new(C, Spacing::Alone).to_tokens(tokens);
+        self.0[0].to_tokens(tokens);
+        self.0[1].to_tokens(tokens);
+        self.0[2].to_tokens(tokens);
     }
 }

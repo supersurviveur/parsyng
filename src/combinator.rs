@@ -109,6 +109,12 @@ impl<T, P> Iterator for PunctuatedIntoIter<T, P> {
     }
 }
 
+impl<T, P, OnError> Punctuated<T, P, OnError> {
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty() && self.last.is_none()
+    }
+}
+
 impl<T: Parse, P: Peek> Parse for Punctuated<T, P, StopOnError> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let mut content = Vec::new();
