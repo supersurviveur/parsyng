@@ -105,6 +105,7 @@ pub struct GenericParams {
 #[derive(Clone, Debug)]
 pub enum GenericParam {
     Type(TypeParam),
+    Lifetime(LifetimeParam),
 }
 
 #[derive(Clone, Debug)]
@@ -122,7 +123,15 @@ pub struct TypeParamBounds {
 #[derive(Clone, Debug)]
 pub enum TypeParamBound {
     Trait(Box<TraitBound>),
+    Lifetime(Lifetime),
 }
+
+#[derive(Clone, Debug)]
+pub struct LifetimeParam {
+    lifetime: Lifetime,
+    bounds: Option<(Colon, LifetimeBounds)>,
+}
+
 #[derive(Clone, Debug)]
 pub struct TraitBound {
     group: Option<Group>,
@@ -135,6 +144,11 @@ pub struct TraitBound {
 pub struct Lifetime {
     quote: Quote,
     ident: Ident,
+}
+
+#[derive(Clone, Debug)]
+pub struct LifetimeBounds {
+    bounds: Punctuated<Lifetime, Plus, StopOnError>,
 }
 
 impl Parse for WhereClause {
@@ -227,6 +241,20 @@ impl Parse for TypeParam {
     }
 }
 
+impl Parse for LifetimeBounds {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let bounds: Punctuated<_, _, _> = input.parse()?;
+        if bounds.is_empty() {
+            Err(Diagnostics::new_error_spanned(
+                "LifetimeBounds must not be empty !",
+                input.span(),
+            ))
+        } else {
+            Ok(Self { bounds })
+        }
+    }
+}
+
 impl Parse for TypeParamBounds {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let bounds: Punctuated<_, _, _> = input.parse()?;
@@ -247,13 +275,23 @@ impl ToTokens for TypeParamBounds {
 }
 impl Parse for TypeParamBound {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        Ok(Self::Trait(input.parse()?))
+        if let Ok(r#trait) = input.try_parse() {
+            Ok(Self::Trait(r#trait))
+        } else if let Ok(lifetime) = input.try_parse() {
+            Ok(Self::Lifetime(lifetime))
+        } else {
+            Err(Diagnostics::new_error_spanned(
+                "Expected a type parameter bound",
+                input.span(),
+            ))
+        }
     }
 }
 impl ToTokens for TypeParamBound {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         match self {
             Self::Trait(trait_bound) => trait_bound.to_tokens(tokens),
+            Self::Lifetime(lifetime) => lifetime.to_tokens(tokens),
         }
     }
 }
@@ -303,19 +341,54 @@ impl ToTokens for TypeParam {
         self.default.to_tokens(tokens);
     }
 }
+impl ToTokens for LifetimeParam {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.lifetime.to_tokens(tokens);
+        self.bounds.to_tokens(tokens);
+    }
+}
+impl ToTokens for LifetimeBounds {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.bounds.to_tokens(tokens);
+    }
+}
+
 impl ToTokens for GenericParam {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         match self {
             Self::Type(ty) => ty.to_tokens(tokens),
+            Self::Lifetime(lifetime_param) => lifetime_param.to_tokens(tokens),
         }
     }
 }
 
 impl Parse for GenericParam {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        Ok(Self::Type(input.parse()?))
+        if let Ok(ty) = input.try_parse() {
+            Ok(Self::Type(ty))
+        } else if let Ok(lifetime_param) = input.try_parse() {
+            Ok(Self::Lifetime(lifetime_param))
+        } else {
+            Err(Diagnostics::new_error_spanned(
+                "Expected a generic parameter",
+                input.span(),
+            ))
+        }
     }
 }
+impl Parse for LifetimeParam {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let lifetime = input.parse()?;
+
+        let bounds = if let Ok(colon) = input.peek_parse() {
+            Some((colon, input.parse()?))
+        } else {
+            None
+        };
+        Ok(Self { lifetime, bounds })
+    }
+}
+
 impl ToTokens for GenericParams {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         self.start_token.to_tokens(tokens);

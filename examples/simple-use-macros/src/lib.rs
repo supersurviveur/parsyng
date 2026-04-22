@@ -17,6 +17,7 @@ pub fn simple_macro(n: (Item, Foo)) -> Result<TokenStream> {
             r#b
         }
     };
-    // eprintln!("{}", tokens);
-    Ok(tokens)
+    eprintln!("{}", tokens);
+    // Ok(tokens)
+    Ok(TokenStream::new())
 }
