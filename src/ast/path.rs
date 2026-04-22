@@ -2,10 +2,12 @@ use parsyng_quote::ToTokens;
 
 use crate::{
     ast::{
+        item::Lifetime,
         tokens::{Comma, Gt, Lt, PathSep},
         r#type::Type,
     },
     combinator::{Punctuated, StopOnError},
+    error::Diagnostics,
     parse::{Parse, Peekable},
     proc_macro::Ident,
 };
@@ -51,6 +53,7 @@ pub struct GenericArgs {
 #[derive(Clone, Debug)]
 pub enum GenericArg {
     Type(Type),
+    Lifetime(Lifetime),
 }
 
 impl ToTokens for TypePathSegment {
@@ -75,13 +78,23 @@ impl ToTokens for GenericArg {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         match self {
             GenericArg::Type(ty) => ty.to_tokens(tokens),
+            GenericArg::Lifetime(lifetime) => lifetime.to_tokens(tokens),
         }
     }
 }
 
 impl Parse for GenericArg {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        Ok(Self::Type(input.parse()?))
+        if let Ok(ty) = input.try_parse() {
+            Ok(Self::Type(ty))
+        } else if let Ok(lifetime) = input.try_parse() {
+            Ok(Self::Lifetime(lifetime))
+        } else {
+            Err(Diagnostics::new_error_spanned(
+                "Expected a generic argument",
+                input.span(),
+            ))
+        }
     }
 }
 impl ToTokens for GenericArgs {
