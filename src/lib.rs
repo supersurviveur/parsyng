@@ -39,21 +39,22 @@ macro_rules! parsyng {
 #[doc(hidden)]
 pub fn debug_stream(input: &crate::proc_macro::TokenStream) {
     #[cfg(feature = "debug-pretty")]
-    if let Some(rustfmt) = toolchain_find::find_installed_component("rustfmt") {
+    {
         use std::{
             io::Write,
             path::PathBuf,
             process::{Command, Stdio},
         };
 
-        fn catch_errors(
-            rustfmt: PathBuf,
-            input: &crate::proc_macro::TokenStream,
-        ) -> Option<String> {
+        fn catch_rustfmt_errors(input: &crate::proc_macro::TokenStream) -> Option<String> {
             // Wrap the input in a dummy function, otherwise statements like `let` can't be formatted
             let prefix = "fn __dummy() {\n";
             let suffix = "\n}";
             let input = format!("{}{}{}", prefix, input, suffix);
+
+            let cargo = PathBuf::from(std::option_env!("CARGO")?);
+            let mut rustfmt = cargo.parent()?.to_owned();
+            rustfmt.push("rustfmt");
 
             let mut command = Command::new(rustfmt);
             let command = command.stdin(Stdio::piped()).stdout(Stdio::piped());
@@ -79,11 +80,9 @@ pub fn debug_stream(input: &crate::proc_macro::TokenStream) {
 
         println!(
             "{}",
-            catch_errors(rustfmt, input).unwrap_or(input.to_string())
+            catch_rustfmt_errors(input).unwrap_or(input.to_string())
         );
-    } else {
-        println!("{}", input);
-    };
+    }
     #[cfg(not(feature = "debug-pretty"))]
     println!("{}", input);
 }
