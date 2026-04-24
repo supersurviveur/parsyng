@@ -1,4 +1,4 @@
-use parsyng_quote::{format_ident, parsyng};
+use parsyng_quote::{format_ident, quote};
 use proc_macro::{Delimiter, Ident, TokenStream};
 
 use crate::{bootstrap, dbg_macros, error::Diagnostics};
@@ -58,7 +58,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Re
     };
 
     let new_function = if out_type.to_string() == "TokenStream" {
-        parsyng! {
+        quote! {
             #[proc_macro]
             pub fn #{ macro_ident }(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut parse_buffer = parsyng::parse::ParseBuffer::new(input);
@@ -77,7 +77,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Re
             }
         }
     } else {
-        parsyng! {
+        quote! {
             #[proc_macro]
             pub fn #{ macro_ident }(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 let mut parse_buffer = parsyng::parse::ParseBuffer::new(input);
@@ -93,7 +93,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Re
         }
     };
 
-    Ok(parsyng! {
+    Ok(quote! {
         #{ new_function }
 
         fn #{ new_macro_ident }(#{ input_ident }: #{ in_type }) -> #{ out_type } #{ stream.collect::<TokenStream>() }

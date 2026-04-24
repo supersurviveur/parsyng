@@ -17,7 +17,7 @@ pub mod __private;
 
 pub mod impls;
 
-pub use parsyng_quote_macros::{parsyng, parsyng_spanned};
+pub use parsyng_quote_macros::{quote, quote_spanned};
 
 #[macro_export]
 macro_rules! format_ident {

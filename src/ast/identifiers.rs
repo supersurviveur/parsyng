@@ -1,5 +1,3 @@
-pub use crate::proc_macro::Ident;
-
 /// https://doc.rust-lang.org/reference/identifiers.html#railroad-IDENTIFIER_OR_KEYWORD
 pub(crate) fn is_identifier_or_keyword(ident: &str) -> bool {
     let mut chars = ident.chars();

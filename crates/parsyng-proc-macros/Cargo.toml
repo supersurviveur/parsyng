@@ -8,6 +8,7 @@ proc-macro = true
 
 [dependencies]
 parsyng-quote = { path = "../parsyng-quote" }
+unicode-ident = "1"
 
 [features]
 default = ["bootstrap"]

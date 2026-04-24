@@ -3,12 +3,12 @@ use proc_macro::{Group, Ident, Literal, Punct, Spacing, Span, TokenStream, Token
 const INTERPOLATION_CHAR: char = '#';
 
 #[proc_macro]
-pub fn parsyng(input: TokenStream) -> TokenStream {
+pub fn quote(input: TokenStream) -> TokenStream {
     parse_tokenstream(input, false)
 }
 
 #[proc_macro]
-pub fn parsyng_spanned(input: TokenStream) -> TokenStream {
+pub fn quote_spanned(input: TokenStream) -> TokenStream {
     let mut span = TokenStream::new();
     let mut stream = input.into_iter();
     while let Some(tt) = stream.next()

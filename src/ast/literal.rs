@@ -1,10 +1,13 @@
 use core::range::Range;
+use std::str::FromStr;
+
+use parsyng_quote::ToTokens;
 
 use crate::{
     ast::identifiers::is_identifier_or_keyword,
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer},
-    proc_macro::Span,
+    proc_macro::{self, Span},
 };
 
 #[derive(Debug, Clone)]
@@ -304,4 +307,25 @@ fn parse_float_literal(literal: String, span: Span) -> Result<LiteralFloat> {
         suffix,
         span,
     })
+}
+
+impl ToTokens for Literal {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        match self {
+            Literal::UInt(literal_number) => literal_number.to_tokens(tokens),
+            Literal::Float(literal_float) => literal_float.to_tokens(tokens),
+        }
+    }
+}
+
+impl ToTokens for LiteralFloat {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        tokens.extend(Some(proc_macro::Literal::from_str(&self.content).unwrap()));
+    }
+}
+
+impl ToTokens for LiteralNumber {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        tokens.extend(Some(proc_macro::Literal::from_str(&self.content).unwrap()));
+    }
 }
