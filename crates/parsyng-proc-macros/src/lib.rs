@@ -15,9 +15,9 @@ mod derive_to_tokens;
 mod proc_macro_helper;
 
 pub(crate) fn dbg_macros() -> TokenStream {
-    use parsyng_quote::parsyng;
+    use parsyng_quote::quote;
 
-    parsyng! {
+    quote! {
         parsyng::debug_stream(&output);
     }
 }

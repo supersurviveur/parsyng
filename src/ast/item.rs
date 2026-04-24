@@ -7,9 +7,9 @@ use parsyng_quote::{
 
 use crate::{
     ast::{
-        item::r#struct::Struct,
-        tokens::{Colon, Comma, Eq, For, Gt, Lt, Plus, Question, Quote, Type, Where},
-        r#type::TypePath,
+        item::{implementation::Implementation, r#struct::Struct},
+        tokens::{Colon, Comma, Eq, For, Gt, Lt, Plus, Question, Quote, Where},
+        r#type::{Type, TypePath},
         visibility::Visibility,
     },
     combinator::{Punctuated, StopOnError},
@@ -18,11 +18,15 @@ use crate::{
     proc_macro::{Group, Ident},
 };
 
+pub mod associated;
+pub mod implementation;
+pub mod constant;
 pub mod r#struct;
 
 #[derive(Clone, Debug)]
 pub enum Item {
     Struct(ItemStruct),
+    Impl(Implementation),
 }
 
 #[derive(Clone, Debug)]
@@ -59,6 +63,8 @@ impl Parse for Item {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         if let Ok(r#struct) = input.try_parse() {
             Ok(Self::Struct(r#struct))
+        } else if let Ok(implementation) = input.try_parse() {
+            Ok(Self::Impl(implementation))
         } else {
             Err(Diagnostics::new_error_spanned(
                 "Expected an item",
@@ -71,6 +77,7 @@ impl ToTokens for Item {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         match self {
             Item::Struct(vis_item) => vis_item.to_tokens(tokens),
+            Item::Impl(implementation) => implementation.to_tokens(tokens),
         }
     }
 }
@@ -86,6 +93,7 @@ pub struct WhereClause {
 #[derive(Clone, Debug)]
 pub enum WhereClauseItem {
     Lifetime(LifetimeWhereClauseItem),
+    Type(TypeBoundWhereClauseItem),
 }
 
 #[derive(Clone, Debug)]
@@ -93,6 +101,14 @@ pub struct LifetimeWhereClauseItem {
     lifetime: Lifetime,
     colon: Colon,
     lifetime_bounds: Punctuated<Lifetime, Plus, StopOnError>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeBoundWhereClauseItem {
+    for_lifetimes: Option<(For, GenericParams)>,
+    ty: Type,
+    colon: Colon,
+    bounds: Option<TypeParamBounds>,
 }
 
 #[derive(Clone, Debug)]
@@ -169,7 +185,16 @@ impl ToTokens for WhereClause {
 
 impl Parse for WhereClauseItem {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        Ok(Self::Lifetime(input.parse()?))
+        if let Ok(lifetime) = input.try_parse() {
+            Ok(Self::Lifetime(lifetime))
+        } else if let Ok(ty) = input.try_parse() {
+            Ok(Self::Type(ty))
+        } else {
+            Err(Diagnostics::new_error_spanned(
+                "Expected a where clause item",
+                input.span(),
+            ))
+        }
     }
 }
 
@@ -178,6 +203,9 @@ impl ToTokens for WhereClauseItem {
         match self {
             WhereClauseItem::Lifetime(lifetime_where_clause_item) => {
                 lifetime_where_clause_item.to_tokens(tokens)
+            }
+            WhereClauseItem::Type(type_bound_where_clause_item) => {
+                type_bound_where_clause_item.to_tokens(tokens)
             }
         }
     }
@@ -198,6 +226,25 @@ impl ToTokens for LifetimeWhereClauseItem {
         self.lifetime.to_tokens(tokens);
         self.colon.to_tokens(tokens);
         self.lifetime_bounds.to_tokens(tokens);
+    }
+}
+impl Parse for TypeBoundWhereClauseItem {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            for_lifetimes: input.try_parse().ok(),
+            ty: input.parse()?,
+            colon: input.parse()?,
+            bounds: input.try_parse().ok(),
+        })
+    }
+}
+
+impl ToTokens for TypeBoundWhereClauseItem {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.for_lifetimes.to_tokens(tokens);
+        self.ty.to_tokens(tokens);
+        self.colon.to_tokens(tokens);
+        self.bounds.to_tokens(tokens);
     }
 }
 

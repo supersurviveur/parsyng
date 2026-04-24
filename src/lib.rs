@@ -27,12 +27,20 @@ pub use parse::Parse;
 pub use parsyng_quote;
 
 #[macro_export]
-macro_rules! parsyng {
+macro_rules! quote { 
     ($($t:tt)*) => {{
         use $crate::parsyng_quote;
-        $crate::parsyng_quote::parsyng! {
+        $crate::parsyng_quote::quote! {
             $($t)*
         }
+    }};
+}
+
+#[macro_export]
+macro_rules! parse_quote {
+    ($($t:tt)*) => {{
+        let stream = $crate::parse::ParseBuffer::new($crate::quote! { $($t)* });
+        stream.parse().unwrap()
     }};
 }
 
