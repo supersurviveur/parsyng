@@ -12,6 +12,5 @@ fn main() {
             type Inner<A>:K+'a=A;
             const Q: u8 = 1;
         }
-        7
     };
 }

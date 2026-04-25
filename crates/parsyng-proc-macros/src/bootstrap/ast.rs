@@ -8,4 +8,5 @@ pub(crate) mod token_stream;
 pub(crate) mod r#type;
 pub(crate) mod visibility;
 pub(crate) mod expression;
+pub(crate) mod statements;
 pub(crate) mod identifiers;

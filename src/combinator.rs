@@ -177,3 +177,21 @@ impl<T: Parse> Parse for Vec<T> {
         Ok(content)
     }
 }
+pub struct GreedyVec<T> {
+    inner: Vec<T>,
+}
+impl<T> GreedyVec<T> {
+    pub fn inner(self) -> Vec<T> {
+        self.inner
+    }
+}
+impl<T: Parse> Parse for GreedyVec<T> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut content = Vec::new();
+        while !input.is_empty() {
+            content.push(input.parse()?);
+        }
+
+        Ok(Self { inner: content })
+    }
+}
