@@ -162,8 +162,8 @@ impl Iterator for ParseBuffer {
     }
 }
 
-pub trait Parse: Sized {
-    fn parse(input: &mut ParseBuffer) -> Result<Self>;
+pub trait Parse {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> where Self: Sized;
 }
 
 pub trait Peek: Parse {}

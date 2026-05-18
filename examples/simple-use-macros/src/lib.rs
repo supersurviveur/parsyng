@@ -1,9 +1,4 @@
-use parsyng::{
-    Parse, ToTokens,
-    ast::{crate_source::Crate, statements::Statement},
-    error::Result,
-    quote,
-};
+use parsyng::{ast::crate_source::Crate, error::Result, quote};
 use proc_macro::TokenStream;
 
 // #[derive(Parse, ToTokens)]

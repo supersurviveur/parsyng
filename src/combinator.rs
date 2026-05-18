@@ -110,8 +110,32 @@ impl<T, P> Iterator for PunctuatedIntoIter<T, P> {
 }
 
 impl<T, P, OnError> Punctuated<T, P, OnError> {
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.content.is_empty() && self.last.is_none()
+    }
+    pub const fn len(&self) -> usize {
+        self.content.len() + if self.last.is_some() { 1 } else { 0 }
+    }
+    pub fn push_back(&mut self, pair: (T, P)) {
+        self.content.insert(0, pair);
+    }
+
+    pub const fn trailing(&self) -> &Option<T> {
+        &self.last
+    }
+    pub const fn empty() -> Self {
+        Self {
+            content: Vec::new(),
+            last: None,
+            _phantom: PhantomData,
+        }
+    }
+    pub const fn one(elem: T) -> Self {
+        Self {
+            content: Vec::new(),
+            last: Some(elem),
+            _phantom: PhantomData,
+        }
     }
 }
 
