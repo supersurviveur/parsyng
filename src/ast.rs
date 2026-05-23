@@ -1,3 +1,4 @@
+pub mod crate_source;
 pub mod delimiter;
 pub mod expression;
 pub mod identifiers;
@@ -9,5 +10,6 @@ pub mod token_stream;
 pub mod tokens;
 pub mod r#type;
 pub mod visibility;
-pub mod crate_source;
 
+#[cfg(all(test, feature = "proc-macro2"))]
+mod tests;

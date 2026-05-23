@@ -11,6 +11,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum Statement {
     Semicolon(Semicolon),
     Item(Item),

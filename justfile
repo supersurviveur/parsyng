@@ -1,3 +1,6 @@
+test:
+    cargo test --features proc-macro2
+
 bench: bench-comptime bench-runtime
 
 bench-runtime:

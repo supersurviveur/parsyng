@@ -24,6 +24,7 @@ pub struct TypeAlias {
 }
 
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum AssociatedAlias {
     TypeAlias(Visibility, TypeAlias),
     Const(Visibility, ConstantItem),

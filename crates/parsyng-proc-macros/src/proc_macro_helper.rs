@@ -18,10 +18,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Re
     let mut in_type = TokenStream::new();
     while let Some(tt) = arguments.next() {
         if arguments.is_empty()
-            && match tt {
-                proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',' => true,
-                _ => false,
-            }
+            && matches!(tt, proc_macro::TokenTree::Punct(ref g) if g.as_char() == ',')
         {
             break;
         }
@@ -32,10 +29,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Re
 
     let mut out_type = TokenStream::new();
     while let Some(tt) = stream.peek()
-        && !match tt {
-            proc_macro::TokenTree::Group(g) if g.delimiter() == Delimiter::Brace => true,
-            _ => false,
-        }
+        && !matches!(tt, proc_macro::TokenTree::Group(g) if g.delimiter() == Delimiter::Brace)
     {
         out_type.extend(Some(stream.next().unwrap()));
     }

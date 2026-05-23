@@ -1,4 +1,4 @@
-use parsyng_quote::{quote, proc_macro::TokenStream};
+use parsyng_quote::{proc_macro::TokenStream, quote};
 
 use crate::{ast::item::ItemStruct, bootstrap};
 

@@ -19,8 +19,8 @@ use crate::{
 };
 
 pub mod associated;
-pub mod implementation;
 pub mod constant;
+pub mod implementation;
 pub mod r#struct;
 
 #[derive(Clone, Debug)]
@@ -53,7 +53,7 @@ impl<T: Parse> Parse for VisItem<T> {
 }
 
 impl<T: ToTokens> ToTokens for VisItem<T> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.visibility.to_tokens(tokens);
         self.item.to_tokens(tokens);
     }
@@ -74,7 +74,7 @@ impl Parse for Item {
     }
 }
 impl ToTokens for Item {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Item::Struct(vis_item) => vis_item.to_tokens(tokens),
             Item::Impl(implementation) => implementation.to_tokens(tokens),
@@ -177,7 +177,7 @@ impl Parse for WhereClause {
 }
 
 impl ToTokens for WhereClause {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.where_keyword.to_tokens(tokens);
         self.generics.to_tokens(tokens);
     }
@@ -199,7 +199,7 @@ impl Parse for WhereClauseItem {
 }
 
 impl ToTokens for WhereClauseItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             WhereClauseItem::Lifetime(lifetime_where_clause_item) => {
                 lifetime_where_clause_item.to_tokens(tokens)
@@ -222,7 +222,7 @@ impl Parse for LifetimeWhereClauseItem {
 }
 
 impl ToTokens for LifetimeWhereClauseItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.lifetime.to_tokens(tokens);
         self.colon.to_tokens(tokens);
         self.lifetime_bounds.to_tokens(tokens);
@@ -240,7 +240,7 @@ impl Parse for TypeBoundWhereClauseItem {
 }
 
 impl ToTokens for TypeBoundWhereClauseItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_lifetimes.to_tokens(tokens);
         self.ty.to_tokens(tokens);
         self.colon.to_tokens(tokens);
@@ -258,7 +258,7 @@ impl Parse for Lifetime {
 }
 
 impl ToTokens for Lifetime {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.quote.to_tokens(tokens);
         self.ident.to_tokens(tokens);
     }
@@ -316,7 +316,7 @@ impl Parse for TypeParamBounds {
     }
 }
 impl ToTokens for TypeParamBounds {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.bounds.to_tokens(tokens);
     }
 }
@@ -335,7 +335,7 @@ impl Parse for TypeParamBound {
     }
 }
 impl ToTokens for TypeParamBound {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Trait(trait_bound) => trait_bound.to_tokens(tokens),
             Self::Lifetime(lifetime) => lifetime.to_tokens(tokens),
@@ -366,7 +366,7 @@ impl Parse for TraitBound {
 }
 
 impl ToTokens for TraitBound {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         if let Some(group) = &self.group {
             let mut inner_tokens = TokenStream::new();
             self.question.to_tokens(&mut inner_tokens);
@@ -382,26 +382,26 @@ impl ToTokens for TraitBound {
 }
 
 impl ToTokens for TypeParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.ident.to_tokens(tokens);
         self.bounds.to_tokens(tokens);
         self.default.to_tokens(tokens);
     }
 }
 impl ToTokens for LifetimeParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.lifetime.to_tokens(tokens);
         self.bounds.to_tokens(tokens);
     }
 }
 impl ToTokens for LifetimeBounds {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.bounds.to_tokens(tokens);
     }
 }
 
 impl ToTokens for GenericParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Type(ty) => ty.to_tokens(tokens),
             Self::Lifetime(lifetime_param) => lifetime_param.to_tokens(tokens),
@@ -437,7 +437,7 @@ impl Parse for LifetimeParam {
 }
 
 impl ToTokens for GenericParams {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         self.start_token.to_tokens(tokens);
         self.generics.to_tokens(tokens);
         self.last_token.to_tokens(tokens);
