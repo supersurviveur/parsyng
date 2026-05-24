@@ -1,0 +1,77 @@
+#![deny(clippy::all)]
+
+pub use parsyng_quote::proc_macro;
+
+pub mod ast;
+pub mod combinator;
+pub mod error;
+pub mod parse;
+pub mod proc_macro_ext;
+pub mod span;
+
+pub use parsyng_quote::{ToTokens, format_ident};
+
+pub use parse::Parse;
+
+pub use parsyng_quote;
+
+pub use parsyng_quote::quote;
+
+#[macro_export]
+macro_rules! parse_quote {
+    ($($t:tt)*) => {{
+        let stream = $crate::parse::ParseBuffer::new($crate::quote! { $($t)* });
+        stream.parse().unwrap()
+    }};
+}
+
+#[doc(hidden)]
+pub fn debug_stream(input: &crate::proc_macro::TokenStream) {
+    #[cfg(feature = "debug-pretty")]
+    {
+        use std::{
+            io::Write,
+            path::PathBuf,
+            process::{Command, Stdio},
+        };
+
+        fn catch_rustfmt_errors(input: &crate::proc_macro::TokenStream) -> Option<String> {
+            // Wrap the input in a dummy function, otherwise statements like `let` can't be formatted
+            let prefix = "fn __dummy() {\n";
+            let suffix = "\n}";
+            let input = format!("{}{}{}", prefix, input, suffix);
+
+            let cargo = PathBuf::from(std::option_env!("CARGO")?);
+            let mut rustfmt = cargo.parent()?.to_owned();
+            rustfmt.push("rustfmt");
+
+            let mut command = Command::new(rustfmt);
+            let command = command.stdin(Stdio::piped()).stdout(Stdio::piped());
+            let mut exec = command.spawn().ok()?;
+            exec.stdin.take()?.write_all(input.as_bytes()).unwrap();
+            let output = exec.wait_with_output().ok().and_then(|output| {
+                if output.status.success() {
+                    String::from_utf8(output.stdout).ok()
+                } else {
+                    None
+                }
+            })?;
+
+            let output = output
+                .trim()
+                .strip_prefix(prefix)?
+                .strip_suffix(suffix)?
+                .trim();
+            let output = output.replace("\n    ", "\n");
+
+            Some(output)
+        }
+
+        println!(
+            "{}",
+            catch_rustfmt_errors(input).unwrap_or(input.to_string())
+        );
+    }
+    #[cfg(not(feature = "debug-pretty"))]
+    println!("{}", input);
+}

@@ -1,10 +1,9 @@
+use parsyng_core::{ast::item::ItemStruct, error, parse};
 use parsyng_quote::quote;
 use proc_macro::TokenStream;
 
-use crate::{ast::item::ItemStruct, bootstrap};
-
-pub fn derive_parse(input: TokenStream) -> bootstrap::error::Result<TokenStream> {
-    let mut stream = bootstrap::parse::ParseBuffer::new(input);
+pub fn derive_parse(input: TokenStream) -> error::Result<TokenStream> {
+    let mut stream = parse::ParseBuffer::new(input);
 
     let struct_item = stream.parse::<ItemStruct>()?;
 

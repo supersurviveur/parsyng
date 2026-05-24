@@ -12,9 +12,7 @@ cfg_select! {
     feature = "unsynn" => {
         use unsynn::{ToTokens, format_ident, quote};
     }
-    _ => {
-        compile_error!{"`parsyng-quote`, `quote` or `unsynn` feature must be enabled"}
-    }
+    _ => {}
 }
 
 #[proc_macro]

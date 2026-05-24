@@ -91,6 +91,7 @@ pub struct WhereClause {
 }
 
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum WhereClauseItem {
     Lifetime(LifetimeWhereClauseItem),
     Type(TypeBoundWhereClauseItem),

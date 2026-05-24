@@ -1,22 +1,11 @@
+use parsyng_quote::quote;
 use proc_macro::TokenStream;
-
-// To parse things more easily, a part of the top-level `parsyng` crate is used as bootstrap.
-// Files are behind symlinks.
-// It require some hacky `use` and `mod` to avoid any errors.
-mod proc_macro {
-    pub(crate) use ::proc_macro::*;
-}
-#[macro_use]
-mod bootstrap;
-use bootstrap::*;
 
 mod derive_parse;
 mod derive_to_tokens;
 mod proc_macro_helper;
 
 pub(crate) fn dbg_macros() -> TokenStream {
-    use parsyng_quote::quote;
-
     quote! {
         parsyng::debug_stream(&output);
     }
@@ -28,7 +17,7 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
         Ok(ok) => ok,
         Err(err) => {
             let mut tokens = TokenStream::new();
-            parsyng_quote::ToTokens::to_tokens(&err, &mut tokens);
+            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
             tokens
         }
     }
@@ -40,7 +29,7 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
         Ok(ok) => ok,
         Err(err) => {
             let mut tokens = TokenStream::new();
-            parsyng_quote::ToTokens::to_tokens(&err, &mut tokens);
+            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
             tokens
         }
     }
@@ -52,7 +41,7 @@ pub fn derive_to_tokens(input: TokenStream) -> TokenStream {
         Ok(ok) => ok,
         Err(err) => {
             let mut tokens = TokenStream::new();
-            parsyng_quote::ToTokens::to_tokens(&err, &mut tokens);
+            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
             tokens
         }
     }

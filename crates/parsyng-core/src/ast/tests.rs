@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use parsyng_quote::{ToTokens, quote};
 
 use crate::{
     ast::{
@@ -25,7 +25,6 @@ use crate::{
     },
     parse::ParseBuffer,
     proc_macro::TokenStream,
-    quote,
 };
 
 fn ts(input: &str) -> TokenStream {

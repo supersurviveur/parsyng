@@ -1,17 +1,22 @@
-use parsyng_quote::{format_ident, quote};
+use parsyng_core::format_ident;
+use parsyng_core::{
+    Token,
+    error::{self, Diagnostics},
+    parse,
+};
+use parsyng_quote::quote;
 use proc_macro::{Delimiter, Ident, TokenStream};
 
-use crate::{bootstrap, dbg_macros, error::Diagnostics};
+use crate::dbg_macros;
 
-pub fn proc_macro(args: TokenStream, input: TokenStream) -> bootstrap::error::Result<TokenStream> {
-    let mut stream = bootstrap::parse::ParseBuffer::new(input);
-    let mut args = bootstrap::parse::ParseBuffer::new(args);
+pub fn proc_macro(args: TokenStream, input: TokenStream) -> error::Result<TokenStream> {
+    let mut stream = parse::ParseBuffer::new(input);
+    let mut args = parse::ParseBuffer::new(args);
 
     stream.parse::<Token![pub]>()?;
     stream.parse::<Token![fn]>()?;
     let macro_ident = stream.parse::<proc_macro::Ident>()?;
-    let mut arguments =
-        bootstrap::parse::ParseBuffer::new(stream.parse::<proc_macro::Group>()?.stream());
+    let mut arguments = parse::ParseBuffer::new(stream.parse::<proc_macro::Group>()?.stream());
     let input_ident = arguments.parse::<proc_macro::Ident>()?;
     arguments.parse::<Token![:]>()?;
 
