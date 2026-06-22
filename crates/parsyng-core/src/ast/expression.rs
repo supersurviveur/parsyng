@@ -1,16 +1,16 @@
-use parsyng_quote::{ToTokens, proc_macro::Delimiter};
+use crate::{ToTokens, proc_macro::Delimiter};
 
 use crate::{
     ast::{
-        delimiter::{Bracketed, Braced, Parenthesized},
+        delimiter::{Braced, Bracketed, Parenthesized},
         item::Lifetime,
         literal::{Literal, LiteralNumber},
-        r#type::TypePath,
         statements::Statement,
         tokens::{
             Await, Break, Colon, Comma, Continue, Dot, DotDot, DotDotEq, Else, If, Loop, Return,
             Semicolon, Unsafe,
         },
+        r#type::TypePath,
     },
     combinator::Punctuated,
     error::Diagnostics,
@@ -294,7 +294,9 @@ impl Parse for ExpressionWithoutBlock {
 
         match wrapped {
             Expression::WithoutBlock(without_block) => Ok(*without_block),
-            Expression::WithBlock(_) => unreachable!("postfix parsing must keep non-block expression"),
+            Expression::WithBlock(_) => {
+                unreachable!("postfix parsing must keep non-block expression")
+            }
         }
     }
 }
@@ -333,7 +335,7 @@ impl Parse for Expression {
     }
 }
 impl ToTokens for ExpressionWithoutBlock {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             ExpressionWithoutBlock::Literal(literal) => literal.to_tokens(tokens),
             ExpressionWithoutBlock::Path(path) => path.to_tokens(tokens),
@@ -365,7 +367,7 @@ impl ToTokens for ExpressionWithoutBlock {
 }
 
 impl ToTokens for ExpressionWithBlock {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             ExpressionWithBlock::Block(block_expression) => block_expression.to_tokens(tokens),
             ExpressionWithBlock::Unsafe(unsafe_block_expression) => {
@@ -378,7 +380,7 @@ impl ToTokens for ExpressionWithBlock {
 }
 
 impl ToTokens for Expression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             Expression::WithoutBlock(expression_without_block) => {
                 expression_without_block.to_tokens(tokens)
@@ -389,64 +391,64 @@ impl ToTokens for Expression {
 }
 
 impl ToTokens for AwaitExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.expr.to_tokens(tokens);
         self.dot.to_tokens(tokens);
         self.await_token.to_tokens(tokens);
     }
 }
 impl ToTokens for FieldExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.expr.to_tokens(tokens);
         self.dot.to_tokens(tokens);
         self.field.to_tokens(tokens);
     }
 }
 impl ToTokens for TupleExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.exprs.to_tokens(tokens);
     }
 }
 impl ToTokens for IndexExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.expr.to_tokens(tokens);
         self.index.to_tokens(tokens);
     }
 }
 impl ToTokens for TupleIndexExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.expr.to_tokens(tokens);
         self.dot.to_tokens(tokens);
         self.index.to_tokens(tokens);
     }
 }
 impl ToTokens for ReturnExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.return_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
     }
 }
 impl ToTokens for ContinueExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.continue_token.to_tokens(tokens);
         self.label.to_tokens(tokens);
     }
 }
 impl ToTokens for BreakExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.break_token.to_tokens(tokens);
         self.label.to_tokens(tokens);
         self.expr.to_tokens(tokens);
     }
 }
 impl ToTokens for CallExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.expr.to_tokens(tokens);
         self.params.to_tokens(tokens);
     }
 }
 impl ToTokens for RangeExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.start.to_tokens(tokens);
         self.dot.to_tokens(tokens);
         self.dot_eq.to_tokens(tokens);
@@ -454,12 +456,12 @@ impl ToTokens for RangeExpression {
     }
 }
 impl ToTokens for UnderscoreExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.underscore.to_tokens(tokens);
     }
 }
 impl ToTokens for GroupedExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.group.to_tokens(tokens);
     }
 }
@@ -615,7 +617,7 @@ impl Parse for TupleExpression {
     }
 }
 impl ToTokens for ArrayElements {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             ArrayElements::Repetition(expression, semicolon, expression1) => {
                 expression.to_tokens(tokens);
@@ -629,7 +631,7 @@ impl ToTokens for ArrayElements {
     }
 }
 impl ToTokens for ArrayExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.exprs.to_tokens(tokens);
     }
 }
@@ -725,21 +727,21 @@ impl Parse for IfExpression {
 }
 
 impl ToTokens for BlockExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.label.to_tokens(tokens);
         self.block.to_tokens(tokens);
     }
 }
 
 impl ToTokens for UnsafeBlockExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.unsafe_token.to_tokens(tokens);
         self.block.to_tokens(tokens);
     }
 }
 
 impl ToTokens for LoopExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.label.to_tokens(tokens);
         self.loop_token.to_tokens(tokens);
         self.block.to_tokens(tokens);
@@ -747,7 +749,7 @@ impl ToTokens for LoopExpression {
 }
 
 impl ToTokens for ElseExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             ElseExpression::If(if_expression) => if_expression.to_tokens(tokens),
             ElseExpression::Block(block) => block.to_tokens(tokens),
@@ -756,7 +758,7 @@ impl ToTokens for ElseExpression {
 }
 
 impl ToTokens for IfExpression {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.if_token.to_tokens(tokens);
         self.condition.to_tokens(tokens);
         self.block.to_tokens(tokens);

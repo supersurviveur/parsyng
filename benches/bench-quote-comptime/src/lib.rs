@@ -3,8 +3,9 @@
 use proc_macro::TokenStream;
 
 cfg_select! {
-    feature = "parsyng-quote" => {
-        use parsyng_quote::{format_ident, quote};
+    feature = "parsyng-core" => {
+        use parsyng_core::{format_ident, quote};
+        use parsyng_core as parsyng;
     }
     feature = "quote" => {
         use quote::{format_ident, quote};

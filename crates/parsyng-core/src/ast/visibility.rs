@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -58,7 +58,7 @@ impl Parse for Visibility {
     }
 }
 impl ToTokens for Visibility {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             Visibility::Public(pub_keyword) => pub_keyword.to_tokens(tokens),
             Visibility::Crate(rust_keyword, parenthesized) => {

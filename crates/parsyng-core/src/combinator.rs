@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, vec::IntoIter};
 
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     error::Result,
@@ -30,7 +30,7 @@ impl<A: Parse, B: Parse, C: Parse, D: Parse, E: Parse> Parse for Cons<A, B, C, D
 impl<A: ToTokens, B: ToTokens, C: ToTokens, D: ToTokens, E: ToTokens> ToTokens
     for Cons<A, B, C, D, E>
 {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.first.to_tokens(tokens);
         self.second.to_tokens(tokens);
         self.third.to_tokens(tokens);
@@ -183,7 +183,7 @@ impl<T: Parse, P: Parse> Parse for Punctuated<T, P, Greedy> {
 }
 
 impl<T: ToTokens, P: ToTokens, OnError> ToTokens for Punctuated<T, P, OnError> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         for pair in &self.content {
             pair.0.to_tokens(tokens);
             pair.1.to_tokens(tokens);

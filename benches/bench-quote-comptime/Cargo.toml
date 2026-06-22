@@ -1,5 +1,5 @@
 [package]
-name = "bench-comptime"
+name = "bench-quote-comptime"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,13 +9,13 @@ proc-macro = true
 [dependencies]
 quote = { version = "1", optional = true }
 unsynn = { version = "0.3", optional = true, default-features = false, features = ["proc_macro2"] }
-parsyng-quote = { path = "../../", optional = true }
+parsyng-core = { path = "../../crates/parsyng-core", optional = true }
 
 [features]
 quote = ["dep:quote"]
 unsynn = ["dep:unsynn"]
-parsyng-quote = ["dep:parsyng-quote"]
-proc-macro2 = ["parsyng-quote/proc-macro2"]
+parsyng-core = ["dep:parsyng-core"]
+proc-macro2 = ["parsyng-core/proc-macro2"]
 
 empty = []
 small = []

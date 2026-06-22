@@ -1,5 +1,7 @@
+use parsyng_core as parsyng;
+
+use parsyng_core::quote;
 use parsyng_core::{ast::item::ItemStruct, error, parse};
-use parsyng_quote::quote;
 use proc_macro::TokenStream;
 
 pub fn derive_parse(input: TokenStream) -> error::Result<TokenStream> {

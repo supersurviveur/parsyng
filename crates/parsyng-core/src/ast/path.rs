@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -30,7 +30,7 @@ impl Parse for SimplePath {
 }
 
 impl ToTokens for SimplePath {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.start_token.to_tokens(tokens);
         self.root.to_tokens(tokens);
         self.paths.to_tokens(tokens);
@@ -52,12 +52,12 @@ pub struct GenericArgs {
 
 #[derive(Clone, Debug)]
 pub enum GenericArg {
-    Type(Type),
+    Type(Box<Type>),
     Lifetime(Lifetime),
 }
 
 impl ToTokens for TypePathSegment {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.path_ident.to_tokens(tokens);
         self.args.to_tokens(tokens);
     }
@@ -75,7 +75,7 @@ impl Parse for TypePathSegment {
     }
 }
 impl ToTokens for GenericArg {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             GenericArg::Type(ty) => ty.to_tokens(tokens),
             GenericArg::Lifetime(lifetime) => lifetime.to_tokens(tokens),
@@ -86,7 +86,7 @@ impl ToTokens for GenericArg {
 impl Parse for GenericArg {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         if let Ok(ty) = input.try_parse() {
-            Ok(Self::Type(ty))
+            Ok(Self::Type(Box::new(ty)))
         } else if let Ok(lifetime) = input.try_parse() {
             Ok(Self::Lifetime(lifetime))
         } else {
@@ -98,7 +98,7 @@ impl Parse for GenericArg {
     }
 }
 impl ToTokens for GenericArgs {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.start_token.to_tokens(tokens);
         self.generics.to_tokens(tokens);
         self.last_token.to_tokens(tokens);

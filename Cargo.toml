@@ -3,9 +3,10 @@ resolver = "3"
 members = [
   "crates/parsyng-quote-macros",
   "crates/parsyng-proc-macros",
-  "crates/parsyng-quote",
-  "crates/parsyng-quote/benches/bench-comptime",
   "crates/parsyng-core",
+
+  "benches/bench-comptime",
+  "benches/bench-quote-comptime",
 
   "examples/simple-use",
   "examples/simple-use-macros",

@@ -1,9 +1,9 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
         delimiter::Braced,
-        item::{GenericParams, WhereClause, associated::AssociatedAlias},
+        item::{GenericParams, WhereClause, impl_item::ImplItem},
         tokens::{For, Impl, Not, Unsafe},
         r#type::{Type, TypePath},
     },
@@ -18,16 +18,29 @@ pub struct Implementation {
     trait_impl: Option<(Option<Not>, TypePath, For)>,
     ty: Type,
     where_clause: Option<WhereClause>,
-    associated_items: Braced<Vec<AssociatedAlias>>,
+    associated_items: Braced<Vec<ImplItem>>,
 }
 
 impl Parse for Implementation {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let unsafety = input.try_parse().ok();
+        let impl_token = input.parse()?;
+        let generic_parameters = input.try_parse().ok();
+        // trait_impl can be: `!Trait for` or `TraitPath for` or absent
+        let trait_impl = if let Ok(not_token) = input.try_parse::<Not>() {
+            let path: TypePath = input.parse()?;
+            let for_token: For = input.parse()?;
+            Some((Some(not_token), path, for_token))
+        } else {
+            input
+                .try_advance(|input| Ok((None, input.parse::<TypePath>()?, input.parse::<For>()?)))
+                .ok()
+        };
         Ok(Self {
-            unsafety: input.parse()?,
-            impl_token: input.parse()?,
-            generic_parameters: input.try_parse().ok(),
-            trait_impl: input.try_parse().ok(),
+            unsafety,
+            impl_token,
+            generic_parameters,
+            trait_impl,
             ty: input.parse()?,
             where_clause: input.try_parse().ok(),
             associated_items: input.parse()?,
@@ -36,7 +49,7 @@ impl Parse for Implementation {
 }
 
 impl ToTokens for Implementation {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.unsafety.to_tokens(tokens);
         self.impl_token.to_tokens(tokens);
         self.generic_parameters.to_tokens(tokens);

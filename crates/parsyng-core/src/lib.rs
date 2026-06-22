@@ -1,21 +1,29 @@
 #![deny(clippy::all)]
 
-pub use parsyng_quote::proc_macro;
+// Put proc_macro in a private module to avoid being able to use `proc_macro::...` directly in this crate
+// This way the `proc-macro2` feature will work out of the box.
+#[cfg(not(feature = "proc-macro2"))]
+mod sealed {
+    pub extern crate proc_macro;
+}
+#[cfg(not(feature = "proc-macro2"))]
+pub use sealed::proc_macro;
+
+#[cfg(feature = "proc-macro2")]
+pub use proc_macro2 as proc_macro;
 
 pub mod ast;
 pub mod combinator;
 pub mod error;
 pub mod parse;
 pub mod proc_macro_ext;
+pub mod quote;
 pub mod span;
-
-pub use parsyng_quote::{ToTokens, format_ident};
 
 pub use parse::Parse;
 
-pub use parsyng_quote;
-
-pub use parsyng_quote::quote;
+// TODO: Try removing this and export it in `parsyng` to gain some compile time.
+pub use parsyng_quote_macros::{quote, quote_spanned};
 
 #[macro_export]
 macro_rules! parse_quote {
@@ -23,6 +31,17 @@ macro_rules! parse_quote {
         let stream = $crate::parse::ParseBuffer::new($crate::quote! { $($t)* });
         stream.parse().unwrap()
     }};
+}
+
+#[macro_export]
+macro_rules! format_ident {
+    ($($args:tt),*) => {
+        $crate::proc_macro::Ident::new(&format!($($args,)*), $crate::proc_macro::Span::call_site())
+    };
+}
+
+pub trait ToTokens {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream);
 }
 
 #[doc(hidden)]

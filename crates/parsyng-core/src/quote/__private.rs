@@ -1,4 +1,4 @@
-pub use super::*;
+pub use crate::proc_macro;
 
 pub fn push_lit_spanned(
     stream: proc_macro::TokenStream,

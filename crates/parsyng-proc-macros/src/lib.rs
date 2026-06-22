@@ -1,4 +1,6 @@
-use parsyng_quote::quote;
+use parsyng_core as parsyng;
+
+use parsyng_core::quote;
 use proc_macro::TokenStream;
 
 mod derive_parse;

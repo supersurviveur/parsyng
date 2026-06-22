@@ -4,8 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "parsyng-bench-runtime"
+name = "parsyng"
 path = "main.rs"
+
+[[bin]]
+name = "parsyng-quote"
+path = "parsyng-quote.rs"
 
 [dependencies]
 syn = "2"
+quote = "1"
+parsyng-core = { path = "../crates/parsyng-core" }

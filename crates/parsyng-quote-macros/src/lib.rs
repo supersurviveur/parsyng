@@ -63,7 +63,7 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
     let mut output: TokenStream = TokenStream::new();
 
     output.extend(
-        "let mut tokens = parsyng_quote::proc_macro::TokenStream::new();".parse::<TokenStream>(),
+        "let mut tokens = parsyng::proc_macro::TokenStream::new();".parse::<TokenStream>(),
     );
 
     let mut iter = stream.into_iter().peekable();
@@ -106,7 +106,7 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
 
             // Make `::parsyng::ToTokens::to_tokens({args});`
             output.extend::<[TokenTree; _]>([
-                Ident::new("parsyng_quote", Span::call_site()).into(),
+                Ident::new("parsyng", Span::call_site()).into(),
                 Punct::new(':', Spacing::Joint).into(),
                 Punct::new(':', Spacing::Alone).into(),
                 Ident::new("ToTokens", Span::call_site()).into(),
@@ -134,7 +134,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
             let inner = parse_tokenstream(group.stream(), spanned);
             output.extend(
                 format!(
-                    "parsyng_quote::__private::push_group{}(parsyng_quote::proc_macro::Delimiter::{:?}, {}, {}&mut tokens);",
+                    "parsyng::quote::__private::push_group{}(parsyng::proc_macro::Delimiter::{:?}, {}, {}&mut tokens);",
                     spanned_fn,
                     group.delimiter(),
                     inner,
@@ -148,7 +148,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
             if let Some(raw_ident) = ident_string.strip_prefix("r#") {
                 output.extend(
                     format!(
-                        "parsyng_quote::__private::push_ident_raw{}(\"{}\", {}&mut tokens);",
+                        "parsyng::quote::__private::push_ident_raw{}(\"{}\", {}&mut tokens);",
                         spanned_fn, raw_ident, spanned_arg,
                     )
                     .parse::<TokenStream>(),
@@ -156,7 +156,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
             } else {
                 output.extend(
                     format!(
-                        "parsyng_quote::__private::push_ident{}(\"{}\", {}&mut tokens);",
+                        "parsyng::quote::__private::push_ident{}(\"{}\", {}&mut tokens);",
                         spanned_fn, ident_string, spanned_arg,
                     )
                     .parse::<TokenStream>(),
@@ -166,7 +166,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
         TokenTree::Punct(punct) => match punct.spacing() {
             Spacing::Joint => output.extend(
                 format!(
-                    "parsyng_quote::__private::push_punct_joint{}('{}', {}&mut tokens);",
+                    "parsyng::quote::__private::push_punct_joint{}('{}', {}&mut tokens);",
                     spanned_fn,
                     punct.as_char().escape_default(),
                     spanned_arg,
@@ -175,7 +175,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
             ),
             Spacing::Alone => output.extend(
                 format!(
-                    "parsyng_quote::__private::push_punct_alone{}('{}', {}&mut tokens);",
+                    "parsyng::quote::__private::push_punct_alone{}('{}', {}&mut tokens);",
                     spanned_fn,
                     punct.as_char().escape_default(),
                     spanned_arg,
@@ -188,7 +188,7 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
             let literal_escaped = literal.escape_default();
             output.extend(
                 format!(
-                    "parsyng_quote::__private::push_lit{}(\"{}\".parse::<parsyng_quote::proc_macro::TokenStream>().unwrap(), {}&mut tokens);",
+                    "parsyng::quote::__private::push_lit{}(\"{}\".parse::<parsyng::proc_macro::TokenStream>().unwrap(), {}&mut tokens);",
                     spanned_fn,
                     literal_escaped,
                     spanned_arg,

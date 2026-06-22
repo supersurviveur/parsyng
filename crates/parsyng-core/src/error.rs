@@ -1,5 +1,7 @@
+use crate as parsyng;
+
 use crate::proc_macro::{Span, TokenStream};
-use parsyng_quote::{ToTokens, quote_spanned};
+use crate::{ToTokens, quote_spanned};
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {

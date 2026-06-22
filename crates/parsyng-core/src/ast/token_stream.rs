@@ -1,3 +1,5 @@
+use parsyng_quote::ToTokens;
+
 use crate::error::{Diagnostics, Result};
 use crate::parse::{Parse, ParseBuffer};
 use crate::proc_macro::{Group, Ident, Literal, Punct, TokenStream, TokenTree};
@@ -46,5 +48,99 @@ impl Parse for Punct {
             "Expected punctuation",
             input.span(),
         ))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TokenStreamUntilSemicolon {
+    tokens: TokenStream,
+}
+
+impl TokenStreamUntilSemicolon {
+    pub fn tokens(&self) -> &TokenStream {
+        &self.tokens
+    }
+}
+
+impl Parse for TokenStreamUntilSemicolon {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut tokens = TokenStream::new();
+        while let Some(token) = input.peek() {
+            if matches!(token, TokenTree::Punct(punct) if punct.as_char() == ';') {
+                break;
+            }
+            tokens.extend(Some(input.next().expect("peeked token must exist")));
+        }
+        Ok(Self { tokens })
+    }
+}
+
+impl ToTokens for TokenStreamUntilSemicolon {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.tokens.to_tokens(tokens);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TokenStreamUntilComma {
+    tokens: TokenStream,
+}
+
+impl TokenStreamUntilComma {
+    pub fn tokens(&self) -> &TokenStream {
+        &self.tokens
+    }
+}
+
+impl Parse for TokenStreamUntilComma {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut tokens = TokenStream::new();
+        while let Some(token) = input.peek() {
+            if matches!(token, TokenTree::Punct(punct) if punct.as_char() == ',') {
+                break;
+            }
+            tokens.extend(Some(input.next().expect("peeked token must exist")));
+        }
+        Ok(Self { tokens })
+    }
+}
+
+impl ToTokens for TokenStreamUntilComma {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.tokens.to_tokens(tokens);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TokenStreamUntilCommaOrGt {
+    tokens: TokenStream,
+}
+
+impl TokenStreamUntilCommaOrGt {
+    pub fn tokens(&self) -> &TokenStream {
+        &self.tokens
+    }
+}
+
+impl Parse for TokenStreamUntilCommaOrGt {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut tokens = TokenStream::new();
+        while let Some(token) = input.peek() {
+            if matches!(
+                token,
+                TokenTree::Punct(punct)
+                    if punct.as_char() == ',' || punct.as_char() == '>'
+            ) {
+                break;
+            }
+            tokens.extend(Some(input.next().expect("peeked token must exist")));
+        }
+        Ok(Self { tokens })
+    }
+}
+
+impl ToTokens for TokenStreamUntilCommaOrGt {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.tokens.to_tokens(tokens);
     }
 }

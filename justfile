@@ -1,5 +1,5 @@
 test:
-    cargo test --features proc-macro2
+    cargo test --package parsyng-core --features proc-macro2
 
 bench: bench-comptime bench-runtime
 

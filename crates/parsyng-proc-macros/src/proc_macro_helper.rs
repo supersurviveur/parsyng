@@ -1,10 +1,12 @@
+use parsyng_core as parsyng;
+
 use parsyng_core::format_ident;
+use parsyng_core::quote;
 use parsyng_core::{
     Token,
     error::{self, Diagnostics},
     parse,
 };
-use parsyng_quote::quote;
 use proc_macro::{Delimiter, Ident, TokenStream};
 
 use crate::dbg_macros;

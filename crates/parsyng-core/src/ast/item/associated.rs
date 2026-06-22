@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -56,7 +56,7 @@ impl Parse for TypeAlias {
 }
 
 impl ToTokens for TypeAlias {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.type_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.generics_parameters.to_tokens(tokens);
@@ -83,7 +83,7 @@ impl Parse for AssociatedAlias {
 }
 
 impl ToTokens for AssociatedAlias {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             AssociatedAlias::TypeAlias(visibility, type_alias) => {
                 visibility.to_tokens(tokens);

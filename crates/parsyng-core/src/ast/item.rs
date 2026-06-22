@@ -1,14 +1,29 @@
 use core::ops::Deref;
 
-use parsyng_quote::{
+use crate::{
     ToTokens,
     proc_macro::{Delimiter, TokenStream},
 };
 
 use crate::{
     ast::{
-        item::{implementation::Implementation, r#struct::Struct},
-        tokens::{Colon, Comma, Eq, For, Gt, Lt, Plus, Question, Quote, Where},
+        attributes::{Attribute, parse_outer_attributes},
+        item::{
+            associated::TypeAlias,
+            constant::ConstantItem,
+            enum_item::EnumItem,
+            extern_block::ExternBlockItem,
+            extern_crate::ExternCrateItem,
+            implementation::Implementation,
+            macro_item::{MacroItem, MacroRulesItem, MacroInvocationItem},
+            module::ModItem,
+            function::FunctionItem,
+            static_item::StaticItem,
+            trait_item::TraitItem,
+            r#struct::Struct,
+            r#use::UseItem,
+        },
+        tokens::{Colon, Comma, Const, Eq, For, Gt, Lt, Plus, Question, Quote, Where},
         r#type::{Type, TypePath},
         visibility::Visibility,
     },
@@ -20,19 +35,64 @@ use crate::{
 
 pub mod associated;
 pub mod constant;
+pub mod enum_item;
+pub mod extern_block;
+pub mod extern_crate;
+pub mod function;
 pub mod implementation;
+pub mod impl_item;
+pub mod macro_item;
+pub mod module;
 pub mod r#struct;
+pub mod static_item;
+pub mod trait_item;
+pub mod r#use;
 
 #[derive(Clone, Debug)]
 pub enum Item {
     Struct(ItemStruct),
-    Impl(Implementation),
+    Const(ItemConst),
+    TypeAlias(ItemTypeAlias),
+    Use(ItemUse),
+    ExternCrate(ItemExternCrate),
+    ExternBlock(ItemExternBlock),
+    Mod(ItemMod),
+    Enum(ItemEnum),
+    Function(ItemFunction),
+    Trait(ItemTrait),
+    Static(ItemStatic),
+    MacroRules(ItemMacroRules),
+    Macro(ItemMacro),
+    MacroInvocation(ItemMacroInvocation),
+    Impl(ItemImpl),
+}
+
+#[derive(Clone, Debug)]
+pub struct ConstParam {
+    const_token: Const,
+    ident: Ident,
+    colon: Colon,
+    ty: Type,
+    default: Option<(Eq, Type)>,
 }
 
 #[derive(Clone, Debug)]
 pub struct VisItem<T> {
+    attributes: Vec<Attribute>,
     visibility: Visibility,
     item: T,
+}
+
+impl Parse for ConstParam {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            const_token: input.parse()?,
+            ident: input.parse()?,
+            colon: input.parse()?,
+            ty: input.parse()?,
+            default: input.try_parse().ok(),
+        })
+    }
 }
 
 impl<T> Deref for VisItem<T> {
@@ -42,10 +102,21 @@ impl<T> Deref for VisItem<T> {
         &self.item
     }
 }
+impl ToTokens for ConstParam {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.const_token.to_tokens(tokens);
+        self.ident.to_tokens(tokens);
+        self.colon.to_tokens(tokens);
+        self.ty.to_tokens(tokens);
+        self.default.to_tokens(tokens);
+    }
+}
 
 impl<T: Parse> Parse for VisItem<T> {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let attributes = parse_outer_attributes(input);
         Ok(Self {
+            attributes,
             visibility: input.parse()?,
             item: input.parse()?,
         })
@@ -54,6 +125,7 @@ impl<T: Parse> Parse for VisItem<T> {
 
 impl<T: ToTokens> ToTokens for VisItem<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.attributes.to_tokens(tokens);
         self.visibility.to_tokens(tokens);
         self.item.to_tokens(tokens);
     }
@@ -63,8 +135,34 @@ impl Parse for Item {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         if let Ok(r#struct) = input.try_parse() {
             Ok(Self::Struct(r#struct))
+        } else if let Ok(const_item) = input.try_parse() {
+            Ok(Self::Const(const_item))
+        } else if let Ok(type_alias) = input.try_parse() {
+            Ok(Self::TypeAlias(type_alias))
+        } else if let Ok(r#use) = input.try_parse() {
+            Ok(Self::Use(r#use))
+        } else if let Ok(extern_crate) = input.try_parse() {
+            Ok(Self::ExternCrate(extern_crate))
+        } else if let Ok(extern_block) = input.try_parse() {
+            Ok(Self::ExternBlock(extern_block))
+        } else if let Ok(module) = input.try_parse() {
+            Ok(Self::Mod(module))
+        } else if let Ok(enum_item) = input.try_parse() {
+            Ok(Self::Enum(enum_item))
+        } else if let Ok(function_item) = input.try_parse() {
+            Ok(Self::Function(function_item))
+        } else if let Ok(trait_item) = input.try_parse() {
+            Ok(Self::Trait(trait_item))
+        } else if let Ok(static_item) = input.try_parse() {
+            Ok(Self::Static(static_item))
         } else if let Ok(implementation) = input.try_parse() {
             Ok(Self::Impl(implementation))
+        } else if let Ok(macro_rules) = input.try_parse() {
+            Ok(Self::MacroRules(macro_rules))
+        } else if let Ok(macro_item) = input.try_parse() {
+            Ok(Self::Macro(macro_item))
+        } else if let Ok(macro_invocation) = input.try_parse() {
+            Ok(Self::MacroInvocation(macro_invocation))
         } else {
             Err(Diagnostics::new_error_spanned(
                 "Expected an item",
@@ -77,12 +175,39 @@ impl ToTokens for Item {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Item::Struct(vis_item) => vis_item.to_tokens(tokens),
+            Item::Const(vis_item) => vis_item.to_tokens(tokens),
+            Item::TypeAlias(vis_item) => vis_item.to_tokens(tokens),
+            Item::Use(vis_item) => vis_item.to_tokens(tokens),
+            Item::ExternCrate(vis_item) => vis_item.to_tokens(tokens),
+            Item::ExternBlock(vis_item) => vis_item.to_tokens(tokens),
+            Item::Mod(vis_item) => vis_item.to_tokens(tokens),
+            Item::Enum(vis_item) => vis_item.to_tokens(tokens),
+            Item::Function(vis_item) => vis_item.to_tokens(tokens),
+            Item::Trait(vis_item) => vis_item.to_tokens(tokens),
+            Item::Static(vis_item) => vis_item.to_tokens(tokens),
+            Item::MacroRules(vis_item) => vis_item.to_tokens(tokens),
+            Item::Macro(vis_item) => vis_item.to_tokens(tokens),
+            Item::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
             Item::Impl(implementation) => implementation.to_tokens(tokens),
         }
     }
 }
 
 pub type ItemStruct = VisItem<Struct>;
+pub type ItemConst = VisItem<ConstantItem>;
+pub type ItemTypeAlias = VisItem<TypeAlias>;
+pub type ItemUse = VisItem<UseItem>;
+pub type ItemExternCrate = VisItem<ExternCrateItem>;
+pub type ItemExternBlock = VisItem<ExternBlockItem>;
+pub type ItemMod = VisItem<ModItem>;
+pub type ItemEnum = VisItem<EnumItem>;
+pub type ItemFunction = VisItem<FunctionItem>;
+pub type ItemTrait = VisItem<TraitItem>;
+pub type ItemStatic = VisItem<StaticItem>;
+pub type ItemMacroRules = VisItem<MacroRulesItem>;
+pub type ItemMacro = VisItem<MacroItem>;
+pub type ItemMacroInvocation = VisItem<MacroInvocationItem>;
+pub type ItemImpl = VisItem<Implementation>;
 
 #[derive(Clone, Debug)]
 pub struct WhereClause {
@@ -123,6 +248,7 @@ pub struct GenericParams {
 pub enum GenericParam {
     Type(TypeParam),
     Lifetime(LifetimeParam),
+    Const(ConstParam),
 }
 
 #[derive(Clone, Debug)]
@@ -406,16 +532,19 @@ impl ToTokens for GenericParam {
         match self {
             Self::Type(ty) => ty.to_tokens(tokens),
             Self::Lifetime(lifetime_param) => lifetime_param.to_tokens(tokens),
+            Self::Const(const_param) => const_param.to_tokens(tokens),
         }
     }
 }
 
 impl Parse for GenericParam {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        if let Ok(ty) = input.try_parse() {
-            Ok(Self::Type(ty))
+        if let Ok(const_param) = input.try_parse() {
+            Ok(Self::Const(const_param))
         } else if let Ok(lifetime_param) = input.try_parse() {
             Ok(Self::Lifetime(lifetime_param))
+        } else if let Ok(ty) = input.try_parse() {
+            Ok(Self::Type(ty))
         } else {
             Err(Diagnostics::new_error_spanned(
                 "Expected a generic parameter",

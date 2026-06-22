@@ -1,6 +1,8 @@
+use parsyng_core as parsyng;
+
 use parsyng_core::proc_macro::TokenStream;
+use parsyng_core::quote;
 use parsyng_core::{ast::item::ItemStruct, error, parse};
-use parsyng_quote::quote;
 
 pub fn derive_to_tokens(input: TokenStream) -> error::Result<TokenStream> {
     let mut stream = parse::ParseBuffer::new(input);

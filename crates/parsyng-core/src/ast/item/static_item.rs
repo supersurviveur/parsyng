@@ -1,17 +1,19 @@
-use crate::ToTokens;
+use parsyng_quote::ToTokens;
 
-use crate::ast::tokens::Semicolon;
-use crate::ast::{
-    token_stream::TokenStreamUntilSemicolon,
-    tokens::{self, Colon, Eq},
-    r#type::Type,
+use crate::{
+    ast::{
+        token_stream::TokenStreamUntilSemicolon,
+        tokens::{self, Colon, Eq, Mut, Semicolon},
+        r#type::Type,
+    },
+    parse::Parse,
+    proc_macro::Ident,
 };
-use crate::parse::Parse;
-use crate::proc_macro::Ident;
 
 #[derive(Clone, Debug)]
-pub struct ConstantItem {
-    const_token: tokens::Const,
+pub struct StaticItem {
+    static_token: tokens::Static,
+    mut_token: Option<Mut>,
     ident: Ident,
     colon: Colon,
     ty: Type,
@@ -19,10 +21,11 @@ pub struct ConstantItem {
     semi: Semicolon,
 }
 
-impl Parse for ConstantItem {
+impl Parse for StaticItem {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         Ok(Self {
-            const_token: input.parse()?,
+            static_token: input.parse()?,
+            mut_token: input.try_parse().ok(),
             ident: input.parse()?,
             colon: input.parse()?,
             ty: input.parse()?,
@@ -32,9 +35,10 @@ impl Parse for ConstantItem {
     }
 }
 
-impl ToTokens for ConstantItem {
-    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
-        self.const_token.to_tokens(tokens);
+impl ToTokens for StaticItem {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.static_token.to_tokens(tokens);
+        self.mut_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.colon.to_tokens(tokens);
         self.ty.to_tokens(tokens);

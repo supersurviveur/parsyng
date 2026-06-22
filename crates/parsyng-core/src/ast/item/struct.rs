@@ -1,8 +1,9 @@
-use parsyng_quote::{ToTokens, proc_macro::Delimiter};
+use crate::ToTokens;
 
 use crate::{
     ast::{
-        delimiter::Braced,
+        attributes::parse_outer_attributes,
+        delimiter::{Braced, Parenthesized},
         item::{GenericParams, WhereClause},
         tokens::{Colon, Comma, Semicolon, StructKeyword},
         r#type::Type,
@@ -10,7 +11,7 @@ use crate::{
     },
     combinator::Punctuated,
     parse::Parse,
-    proc_macro::Ident,
+    proc_macro::{Delimiter, Ident},
 };
 
 #[derive(Clone, Debug)]
@@ -24,7 +25,7 @@ pub struct StructStruct {
     struct_ident: Ident,
     generic_parameters: Option<GenericParams>,
     where_clause: Option<WhereClause>,
-    fields: Option<Braced<Punctuated<StructField, Comma>>>,
+    fields: StructFields,
     semicolon: Option<Semicolon>,
 }
 
@@ -54,7 +55,10 @@ impl StructStruct {
         &self.generic_parameters
     }
     pub fn fields(&self) -> Option<&Punctuated<StructField, Comma>> {
-        self.fields.as_deref()
+        match &self.fields {
+            StructFields::Named(fields) => Some(fields),
+            _ => None,
+        }
     }
 }
 
@@ -64,7 +68,7 @@ impl Parse for Struct {
     }
 }
 impl ToTokens for Struct {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             Struct::StructStruct(struct_struct) => struct_struct.to_tokens(tokens),
         }
@@ -80,9 +84,13 @@ impl Parse for StructStruct {
         let (fields, semicolon) = if let Some(group) = input.peek_group()
             && group.delimiter() == Delimiter::Brace
         {
-            (Some(input.parse()?), None)
+            (StructFields::Named(input.parse()?), None)
+        } else if let Some(group) = input.peek_group()
+            && group.delimiter() == Delimiter::Parenthesis
+        {
+            (StructFields::Unnamed(input.parse()?), Some(input.parse()?))
         } else {
-            (None, Some(input.parse()?))
+            (StructFields::Unit, Some(input.parse()?))
         };
 
         Ok(Self {
@@ -97,7 +105,7 @@ impl Parse for StructStruct {
 }
 
 impl ToTokens for StructStruct {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.struct_token.to_tokens(tokens);
         self.struct_ident.to_tokens(tokens);
         self.generic_parameters.to_tokens(tokens);
@@ -112,6 +120,19 @@ pub struct StructField {
     visibility: Visibility,
     field_ident: Ident,
     colon_token: Colon,
+    ty: Type,
+}
+
+#[derive(Clone, Debug)]
+pub enum StructFields {
+    Named(Braced<Punctuated<StructField, Comma>>),
+    Unnamed(Parenthesized<Punctuated<TupleField, Comma>>),
+    Unit,
+}
+
+#[derive(Clone, Debug)]
+pub struct TupleField {
+    attributes: Vec<crate::ast::attributes::Attribute>,
     ty: Type,
 }
 
@@ -131,11 +152,38 @@ impl Parse for StructField {
         })
     }
 }
+
+impl Parse for TupleField {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            attributes: parse_outer_attributes(input),
+            ty: input.parse()?,
+        })
+    }
+}
+
 impl ToTokens for StructField {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.visibility.to_tokens(tokens);
         self.field_ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
+        self.ty.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for StructFields {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        match self {
+            StructFields::Named(fields) => fields.to_tokens(tokens),
+            StructFields::Unnamed(fields) => fields.to_tokens(tokens),
+            StructFields::Unit => {}
+        }
+    }
+}
+
+impl ToTokens for TupleField {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.attributes.to_tokens(tokens);
         self.ty.to_tokens(tokens);
     }
 }

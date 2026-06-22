@@ -1,6 +1,6 @@
 #![allow(unexpected_cfgs)]
 
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     error::{Diagnostics, Result},
@@ -199,7 +199,7 @@ impl<const K: u8> Parse for RustKeyword<K> {
 }
 impl<const K: u8> Peek for RustKeyword<K> {}
 impl<const K: u8> ToTokens for RustKeyword<K> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         tokens.extend(Some(self.ident.clone()));
     }
 }
@@ -249,7 +249,7 @@ impl<const A: char> Parse for RustPunct1<A> {
 impl<const A: char> Peek for RustPunct1<A> {}
 
 impl<const A: char> ToTokens for RustPunct1<A> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.0[0].to_tokens(tokens);
     }
 }
@@ -271,7 +271,7 @@ impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
 }
 
 impl<const A: char, const B: char> ToTokens for RustPunct2<A, B> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.0[0].to_tokens(tokens);
         self.0[1].to_tokens(tokens);
     }
@@ -297,7 +297,7 @@ impl<const A: char, const B: char, const C: char> Parse for RustPunct3<A, B, C> 
 }
 
 impl<const A: char, const B: char, const C: char> ToTokens for RustPunct3<A, B, C> {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.0[0].to_tokens(tokens);
         self.0[1].to_tokens(tokens);
         self.0[2].to_tokens(tokens);

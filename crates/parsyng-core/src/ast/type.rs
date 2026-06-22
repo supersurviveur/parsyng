@@ -1,19 +1,105 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
-    ast::{path::TypePathSegment, tokens::PathSep},
+    ast::{
+        delimiter::{Bracketed, Parenthesized},
+        item::{Lifetime, TypeParamBounds},
+        path::TypePathSegment,
+        tokens::{
+            And, As, Comma, Const, Dyn, Extern, Fn, Gt, Impl, Lt, Mut, Not, PathSep, RArrow,
+            Semicolon, Star, Unsafe,
+        },
+    },
+    combinator::Punctuated,
     error::Diagnostics,
-    parse::Parse,
+    parse::{Parse, ParseBuffer},
+    proc_macro::{Delimiter, Literal, TokenStream},
 };
 
 #[derive(Clone, Debug)]
 pub enum Type {
     Path(Box<TypePath>),
+    Reference(TypeReference),
+    Pointer(TypePointer),
+    Tuple(Box<Parenthesized<Punctuated<Type, Comma>>>),
+    Paren(Box<Parenthesized<Type>>),
+    Array(Box<Bracketed<TypeArray>>),
+    Slice(Box<Bracketed<Type>>),
+    ImplTrait(TypeImplTrait),
+    DynTrait(TypeDynTrait),
+    BareFn(Box<TypeBareFn>),
+    QualifiedPath(TypeQualifiedPath),
+    Never(Not),
 }
+
 #[derive(Clone, Debug)]
 pub struct TypePath {
     start_token: Option<PathSep>,
     root: TypePathSegment,
+    paths: Vec<(PathSep, TypePathSegment)>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeReference {
+    and_token: And,
+    lifetime: Option<Lifetime>,
+    mutability: Option<Mut>,
+    elem: Box<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypePointerKind {
+    Const(Const),
+    Mut(Mut),
+}
+
+#[derive(Clone, Debug)]
+pub struct TypePointer {
+    star_token: Star,
+    kind: TypePointerKind,
+    elem: Box<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeArray {
+    elem: Box<Type>,
+    semicolon: Semicolon,
+    len: TokenStream,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeImplTrait {
+    impl_token: Impl,
+    bounds: TypeParamBounds,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeDynTrait {
+    dyn_token: Dyn,
+    bounds: TypeParamBounds,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeBareFn {
+    unsafety: Option<Unsafe>,
+    extern_token: Option<(Extern, Option<Literal>)>,
+    fn_token: Fn,
+    params: Parenthesized<Punctuated<BareFnParam, Comma>>,
+    return_type: Option<(RArrow, Box<Type>)>,
+}
+
+#[derive(Clone, Debug)]
+pub enum BareFnParam {
+    Type(Box<Type>),
+    Variadic(crate::ast::tokens::DotDotDot),
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeQualifiedPath {
+    lt_token: Lt,
+    ty: Box<Type>,
+    as_token: Option<(As, TypePath)>,
+    gt_token: Gt,
     paths: Vec<(PathSep, TypePathSegment)>,
 }
 
@@ -27,28 +113,289 @@ impl Parse for TypePath {
     }
 }
 
+impl Parse for TypeReference {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            and_token: input.parse()?,
+            lifetime: input.try_parse().ok(),
+            mutability: input.try_parse().ok(),
+            elem: Box::new(input.parse()?),
+        })
+    }
+}
+
+impl Parse for TypePointer {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let star_token = input.parse()?;
+        let kind = if let Ok(const_token) = input.try_parse() {
+            TypePointerKind::Const(const_token)
+        } else if let Ok(mut_token) = input.try_parse() {
+            TypePointerKind::Mut(mut_token)
+        } else {
+            return Err(Diagnostics::new_error_spanned(
+                "Expected `const` or `mut` after `*`",
+                input.span(),
+            ));
+        };
+        Ok(Self {
+            star_token,
+            kind,
+            elem: Box::new(input.parse()?),
+        })
+    }
+}
+
+impl Parse for TypeArray {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            elem: Box::new(input.parse()?),
+            semicolon: input.parse()?,
+            len: input.parse()?,
+        })
+    }
+}
+
+impl Parse for TypeImplTrait {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            impl_token: input.parse()?,
+            bounds: input.parse()?,
+        })
+    }
+}
+
+impl Parse for TypeDynTrait {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            dyn_token: input.parse()?,
+            bounds: input.parse()?,
+        })
+    }
+}
+
+impl Parse for BareFnParam {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        if let Ok(variadic) = input.try_parse() {
+            Ok(Self::Variadic(variadic))
+        } else {
+            Ok(Self::Type(Box::new(input.parse()?)))
+        }
+    }
+}
+
+impl Parse for TypeBareFn {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let unsafety = input.try_parse().ok();
+        let extern_token = if let Ok(extern_token) = input.try_parse() {
+            let abi = input.try_parse().ok();
+            Some((extern_token, abi))
+        } else {
+            None
+        };
+        let fn_token = input.parse()?;
+        Ok(Self {
+            unsafety,
+            extern_token,
+            fn_token,
+            params: input.parse()?,
+            return_type: input
+                .try_parse::<(RArrow, Type)>()
+                .ok()
+                .map(|(arrow, ty)| (arrow, Box::new(ty))),
+        })
+    }
+}
+
+impl Parse for TypeQualifiedPath {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let lt_token = input.parse()?;
+        let ty = Box::new(input.parse()?);
+        let as_token = if let Ok(as_token) = input.try_parse() {
+            Some((as_token, input.parse()?))
+        } else {
+            None
+        };
+        let gt_token = input.parse()?;
+        let mut paths = Vec::new();
+        let first_sep: PathSep = input.parse()?;
+        paths.push((first_sep, input.parse()?));
+        while let Ok(sep) = input.try_parse() {
+            paths.push((sep, input.parse()?));
+        }
+        Ok(Self {
+            lt_token,
+            ty,
+            as_token,
+            gt_token,
+            paths,
+        })
+    }
+}
+
+impl Parse for Type {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let mut diagnostics = Diagnostics::empty();
+
+        if let Ok(reference) = input.try_parse() {
+            return Ok(Self::Reference(reference));
+        }
+        if let Ok(pointer) = input.try_parse() {
+            return Ok(Self::Pointer(pointer));
+        }
+        if let Ok(never) = input.try_parse::<Not>() {
+            return Ok(Self::Never(never));
+        }
+        if let Ok(bare_fn) = input.try_parse() {
+        return Ok(Self::BareFn(Box::new(bare_fn)));
+        }
+        if let Ok(impl_trait) = input.try_parse() {
+            return Ok(Self::ImplTrait(impl_trait));
+        }
+        if let Ok(dyn_trait) = input.try_parse() {
+            return Ok(Self::DynTrait(dyn_trait));
+        }
+        if let Ok(qualified) = input.try_parse() {
+            return Ok(Self::QualifiedPath(qualified));
+        }
+        if let Some(group) = input.peek_group() {
+            match group.delimiter() {
+                Delimiter::Parenthesis => {
+                    let group = input.group().expect("peeked group must exist");
+                    let mut inner = ParseBuffer::new(group.stream());
+                    let content: Punctuated<Type, Comma> = inner.parse()?;
+                    if !inner.is_empty() {
+                        return Err(Diagnostics::new_error_spanned(
+                            "Unexpected tokens in tuple type",
+                            inner.span(),
+                        ));
+                    }
+                    if content.len() == 1 && content.trailing().is_some() {
+                        let mut iter = content.into_iter();
+                        let ty = iter.next().expect("len=1 guarantees element");
+                        return Ok(Self::Paren(Box::new(Parenthesized::new(group, ty))));
+                    }
+                    return Ok(Self::Tuple(Box::new(Parenthesized::new(group, content))));
+                }
+                Delimiter::Bracket => {
+                    if let Ok(array) = input.try_parse::<Bracketed<TypeArray>>() {
+                        return Ok(Self::Array(Box::new(array)));
+                    }
+                    if let Ok(slice) = input.try_parse::<Bracketed<Type>>() {
+                        return Ok(Self::Slice(Box::new(slice)));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        match input.try_parse() {
+            Ok(ok) => return Ok(Self::Path(ok)),
+            Err(err) => diagnostics.join(err),
+        }
+        Err(diagnostics)
+    }
+}
+
 impl ToTokens for TypePath {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.start_token.to_tokens(tokens);
         self.root.to_tokens(tokens);
         self.paths.to_tokens(tokens);
     }
 }
 
-impl ToTokens for Type {
+impl ToTokens for TypeReference {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.and_token.to_tokens(tokens);
+        self.lifetime.to_tokens(tokens);
+        self.mutability.to_tokens(tokens);
+        self.elem.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for TypePointer {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.star_token.to_tokens(tokens);
+        self.kind.to_tokens(tokens);
+        self.elem.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for TypePointerKind {
     fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
         match self {
-            Type::Path(type_path) => type_path.to_tokens(tokens),
+            TypePointerKind::Const(const_token) => const_token.to_tokens(tokens),
+            TypePointerKind::Mut(mut_token) => mut_token.to_tokens(tokens),
         }
     }
 }
-impl Parse for Type {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        let mut diagnostics = Diagnostics::empty();
-        match input.try_parse() {
-            Ok(ok) => return Ok(Self::Path(ok)),
-            Err(err) => diagnostics.join(err),
+
+impl ToTokens for TypeArray {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.elem.to_tokens(tokens);
+        self.semicolon.to_tokens(tokens);
+        self.len.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for TypeImplTrait {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.impl_token.to_tokens(tokens);
+        self.bounds.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for TypeDynTrait {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.dyn_token.to_tokens(tokens);
+        self.bounds.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for TypeBareFn {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.unsafety.to_tokens(tokens);
+        self.extern_token.to_tokens(tokens);
+        self.fn_token.to_tokens(tokens);
+        self.params.to_tokens(tokens);
+        self.return_type.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for BareFnParam {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        match self {
+            BareFnParam::Type(ty) => ty.to_tokens(tokens),
+            BareFnParam::Variadic(variadic) => variadic.to_tokens(tokens),
         }
-        Err(diagnostics)
+    }
+}
+
+impl ToTokens for TypeQualifiedPath {
+    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+        self.lt_token.to_tokens(tokens);
+        self.ty.to_tokens(tokens);
+        self.as_token.to_tokens(tokens);
+        self.gt_token.to_tokens(tokens);
+        self.paths.to_tokens(tokens);
+    }
+}
+
+impl ToTokens for Type {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        match self {
+            Type::Path(type_path) => type_path.to_tokens(tokens),
+            Type::Reference(reference) => reference.to_tokens(tokens),
+            Type::Pointer(pointer) => pointer.to_tokens(tokens),
+            Type::Tuple(tuple) => tuple.to_tokens(tokens),
+            Type::Paren(paren) => paren.to_tokens(tokens),
+            Type::Array(array) => array.to_tokens(tokens),
+            Type::Slice(slice) => slice.to_tokens(tokens),
+            Type::ImplTrait(impl_trait) => impl_trait.to_tokens(tokens),
+            Type::DynTrait(dyn_trait) => dyn_trait.to_tokens(tokens),
+            Type::BareFn(bare_fn) => bare_fn.to_tokens(tokens),
+            Type::QualifiedPath(qualified) => qualified.to_tokens(tokens),
+            Type::Never(never) => never.to_tokens(tokens),
+        }
     }
 }

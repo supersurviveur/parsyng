@@ -1,6 +1,6 @@
 use core::iter;
 
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     error::Result,

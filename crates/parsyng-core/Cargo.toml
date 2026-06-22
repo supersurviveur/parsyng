@@ -8,12 +8,12 @@ keywords = ["macros", "proc"]
 categories = ["development-tools::procedural-macro-helpers"]
 
 [dependencies]
-parsyng-quote = { path = "../parsyng-quote" }
+parsyng-quote-macros = { path = "../parsyng-quote-macros" }
 unicode-ident = "1"
 
 # Optional dependencies
 proc-macro2 = { version = "1", optional = true }
 
 [features]
-proc-macro2 = ["dep:proc-macro2", "parsyng-quote/proc-macro2"]
+proc-macro2 = ["dep:proc-macro2"]
 debug-pretty = []

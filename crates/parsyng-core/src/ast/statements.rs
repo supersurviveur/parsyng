@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -39,7 +39,7 @@ impl Parse for Statement {
 }
 
 impl ToTokens for Statement {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             Statement::Semicolon(semicolon) => semicolon.to_tokens(tokens),
             Statement::Item(item) => item.to_tokens(tokens),

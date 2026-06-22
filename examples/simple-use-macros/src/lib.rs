@@ -1,4 +1,4 @@
-use parsyng::{ast::crate_source::Crate, error::Result, parsyng_quote, quote};
+use parsyng::{ast::crate_source::Crate, error::Result, quote};
 use proc_macro::TokenStream;
 
 // #[derive(Parse, ToTokens)]
@@ -18,7 +18,7 @@ pub fn simple_macro(n: Crate) -> Result<TokenStream> {
             r#b
         }
     };
-    eprintln!("{}", tokens);
+    println!("{}", tokens);
     // Ok(tokens)
     Ok(TokenStream::new())
 }
