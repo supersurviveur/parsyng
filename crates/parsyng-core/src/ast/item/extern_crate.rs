@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::tokens::{As, Crate, Extern, Semicolon},
@@ -28,7 +28,7 @@ impl Parse for ExternCrateItem {
 }
 
 impl ToTokens for ExternCrateItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.extern_token.to_tokens(tokens);
         self.crate_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);

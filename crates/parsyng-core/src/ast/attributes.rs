@@ -1,7 +1,10 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
-    ast::{delimiter::Bracketed, tokens::{Not, Pound}},
+    ast::{
+        delimiter::Bracketed,
+        tokens::{Not, Pound},
+    },
     error::Diagnostics,
     parse::{Parse, ParseBuffer},
     proc_macro::{Span, TokenStream},
@@ -35,7 +38,7 @@ impl Parse for Attribute {
 }
 
 impl ToTokens for Attribute {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.pound.to_tokens(tokens);
         self.bang.to_tokens(tokens);
         self.meta.to_tokens(tokens);

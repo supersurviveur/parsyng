@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{delimiter::Braced, tokens::Extern},
@@ -24,7 +24,7 @@ impl Parse for ExternBlockItem {
 }
 
 impl ToTokens for ExternBlockItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.extern_token.to_tokens(tokens);
         self.abi.to_tokens(tokens);
         self.items.to_tokens(tokens);

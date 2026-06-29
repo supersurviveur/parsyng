@@ -1,5 +1,6 @@
 use crate::ToTokens;
 
+use crate::ast::attributes::Attribute;
 use crate::{
     ast::{
         attributes::parse_outer_attributes,
@@ -117,6 +118,7 @@ impl ToTokens for StructStruct {
 
 #[derive(Clone, Debug)]
 pub struct StructField {
+    attributes: Vec<Attribute>,
     visibility: Visibility,
     field_ident: Ident,
     colon_token: Colon,
@@ -144,7 +146,9 @@ impl StructField {
 
 impl Parse for StructField {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let attributes = parse_outer_attributes(input);
         Ok(Self {
+            attributes,
             visibility: input.parse()?,
             field_ident: input.parse()?,
             colon_token: input.parse()?,
@@ -164,6 +168,7 @@ impl Parse for TupleField {
 
 impl ToTokens for StructField {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        self.attributes.to_tokens(tokens);
         self.visibility.to_tokens(tokens);
         self.field_ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
@@ -172,7 +177,7 @@ impl ToTokens for StructField {
 }
 
 impl ToTokens for StructFields {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             StructFields::Named(fields) => fields.to_tokens(tokens),
             StructFields::Unnamed(fields) => fields.to_tokens(tokens),
@@ -182,8 +187,30 @@ impl ToTokens for StructFields {
 }
 
 impl ToTokens for TupleField {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.ty.to_tokens(tokens);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate as parsyng;
+    use parsyng_quote_macros::quote;
+
+    use super::*;
+    use crate::ast::tests::check;
+
+    #[test]
+    fn test_doc_attributes() {
+        check::<Struct>(quote! {
+            struct Receiver<T> {
+                /// State shared with all receivers and senders.
+                shared: Arc<Shared<T>>,
+
+                /// Next position to read from
+                next: u64,
+            }
+        });
     }
 }

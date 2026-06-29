@@ -14,13 +14,13 @@ use crate::{
             enum_item::EnumItem,
             extern_block::ExternBlockItem,
             extern_crate::ExternCrateItem,
-            implementation::Implementation,
-            macro_item::{MacroItem, MacroRulesItem, MacroInvocationItem},
-            module::ModItem,
             function::FunctionItem,
+            implementation::Implementation,
+            macro_item::{MacroInvocationItem, MacroItem, MacroRulesItem},
+            module::ModItem,
             static_item::StaticItem,
-            trait_item::TraitItem,
             r#struct::Struct,
+            trait_item::TraitItem,
             r#use::UseItem,
         },
         tokens::{Colon, Comma, Const, Eq, For, Gt, Lt, Plus, Question, Quote, Where},
@@ -39,12 +39,12 @@ pub mod enum_item;
 pub mod extern_block;
 pub mod extern_crate;
 pub mod function;
-pub mod implementation;
 pub mod impl_item;
+pub mod implementation;
 pub mod macro_item;
 pub mod module;
-pub mod r#struct;
 pub mod static_item;
+pub mod r#struct;
 pub mod trait_item;
 pub mod r#use;
 
@@ -133,36 +133,98 @@ impl<T: ToTokens> ToTokens for VisItem<T> {
 
 impl Parse for Item {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let attributes = parse_outer_attributes(input);
+        let visibility = input.parse()?;
         if let Ok(r#struct) = input.try_parse() {
-            Ok(Self::Struct(r#struct))
+            Ok(Self::Struct(VisItem {
+                attributes,
+                visibility,
+                item: r#struct,
+            }))
         } else if let Ok(const_item) = input.try_parse() {
-            Ok(Self::Const(const_item))
+            Ok(Self::Const(VisItem {
+                attributes,
+                visibility,
+                item: const_item,
+            }))
         } else if let Ok(type_alias) = input.try_parse() {
-            Ok(Self::TypeAlias(type_alias))
+            Ok(Self::TypeAlias(VisItem {
+                attributes,
+                visibility,
+                item: type_alias,
+            }))
         } else if let Ok(r#use) = input.try_parse() {
-            Ok(Self::Use(r#use))
+            Ok(Self::Use(VisItem {
+                attributes,
+                visibility,
+                item: r#use,
+            }))
         } else if let Ok(extern_crate) = input.try_parse() {
-            Ok(Self::ExternCrate(extern_crate))
+            Ok(Self::ExternCrate(VisItem {
+                attributes,
+                visibility,
+                item: extern_crate,
+            }))
         } else if let Ok(extern_block) = input.try_parse() {
-            Ok(Self::ExternBlock(extern_block))
+            Ok(Self::ExternBlock(VisItem {
+                attributes,
+                visibility,
+                item: extern_block,
+            }))
         } else if let Ok(module) = input.try_parse() {
-            Ok(Self::Mod(module))
+            Ok(Self::Mod(VisItem {
+                attributes,
+                visibility,
+                item: module,
+            }))
         } else if let Ok(enum_item) = input.try_parse() {
-            Ok(Self::Enum(enum_item))
+            Ok(Self::Enum(VisItem {
+                attributes,
+                visibility,
+                item: enum_item,
+            }))
         } else if let Ok(function_item) = input.try_parse() {
-            Ok(Self::Function(function_item))
+            Ok(Self::Function(VisItem {
+                attributes,
+                visibility,
+                item: function_item,
+            }))
         } else if let Ok(trait_item) = input.try_parse() {
-            Ok(Self::Trait(trait_item))
+            Ok(Self::Trait(VisItem {
+                attributes,
+                visibility,
+                item: trait_item,
+            }))
         } else if let Ok(static_item) = input.try_parse() {
-            Ok(Self::Static(static_item))
+            Ok(Self::Static(VisItem {
+                attributes,
+                visibility,
+                item: static_item,
+            }))
         } else if let Ok(implementation) = input.try_parse() {
-            Ok(Self::Impl(implementation))
+            Ok(Self::Impl(VisItem {
+                attributes,
+                visibility,
+                item: implementation,
+            }))
         } else if let Ok(macro_rules) = input.try_parse() {
-            Ok(Self::MacroRules(macro_rules))
+            Ok(Self::MacroRules(VisItem {
+                attributes,
+                visibility,
+                item: macro_rules,
+            }))
         } else if let Ok(macro_item) = input.try_parse() {
-            Ok(Self::Macro(macro_item))
+            Ok(Self::Macro(VisItem {
+                attributes,
+                visibility,
+                item: macro_item,
+            }))
         } else if let Ok(macro_invocation) = input.try_parse() {
-            Ok(Self::MacroInvocation(macro_invocation))
+            Ok(Self::MacroInvocation(VisItem {
+                attributes,
+                visibility,
+                item: macro_invocation,
+            }))
         } else {
             Err(Diagnostics::new_error_spanned(
                 "Expected an item",
@@ -580,5 +642,21 @@ impl Parse for GenericParams {
             generics: input.parse()?,
             last_token: input.parse()?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate as parsyng;
+    use parsyng_quote_macros::quote;
+
+    use super::*;
+    use crate::ast::tests::check;
+
+    #[test]
+    fn test_type_path() {
+        check::<TypePath>(quote! {
+            FnOnce() -> T
+        });
     }
 }

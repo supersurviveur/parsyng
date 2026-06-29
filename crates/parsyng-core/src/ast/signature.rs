@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -128,7 +128,7 @@ impl Parse for SelfParam {
 }
 
 impl ToTokens for FnSignature {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.const_token.to_tokens(tokens);
         self.async_token.to_tokens(tokens);
         self.unsafe_token.to_tokens(tokens);
@@ -143,7 +143,7 @@ impl ToTokens for FnSignature {
 }
 
 impl ToTokens for FnParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             FnParam::SelfParam(self_param) => self_param.to_tokens(tokens),
             FnParam::Typed(typed) => typed.to_tokens(tokens),
@@ -153,7 +153,7 @@ impl ToTokens for FnParam {
 }
 
 impl ToTokens for SelfParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.reference.to_tokens(tokens);
         self.mutability.to_tokens(tokens);
         self.self_token.to_tokens(tokens);
@@ -162,7 +162,7 @@ impl ToTokens for SelfParam {
 }
 
 impl ToTokens for PatType {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.pat.to_tokens(tokens);
         self.colon.to_tokens(tokens);
         self.ty.to_tokens(tokens);

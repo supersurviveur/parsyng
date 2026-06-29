@@ -1,10 +1,10 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
         attributes::parse_outer_attributes,
         item::{
-            associated::TypeAlias, constant::ConstantItem, function::FunctionItem,
+            ItemFunction, associated::TypeAlias, constant::ConstantItem,
             macro_item::MacroInvocationItem,
         },
     },
@@ -22,7 +22,7 @@ pub struct ImplItem {
 pub enum ImplItemKind {
     Type(TypeAlias),
     Const(ConstantItem),
-    Function(FunctionItem),
+    Function(ItemFunction),
     Macro(MacroInvocationItem),
 }
 
@@ -48,14 +48,14 @@ impl Parse for ImplItem {
 }
 
 impl ToTokens for ImplItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.kind.to_tokens(tokens);
     }
 }
 
 impl ToTokens for ImplItemKind {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             ImplItemKind::Type(item) => item.to_tokens(tokens),
             ImplItemKind::Const(item) => item.to_tokens(tokens),

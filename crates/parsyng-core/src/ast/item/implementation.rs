@@ -59,3 +59,22 @@ impl ToTokens for Implementation {
         self.associated_items.to_tokens(tokens);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate as parsyng;
+    use parsyng_quote_macros::quote;
+
+    use super::*;
+    use crate::ast::tests::check;
+
+    #[test]
+    fn test_implementation() {
+        check::<Implementation>(quote! {
+            impl<T> Sender<T> {
+                fn weak_count() {
+                }
+            }
+        });
+    }
+}

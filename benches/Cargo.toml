@@ -11,7 +11,7 @@ path = "main.rs"
 name = "parsyng-quote"
 path = "parsyng-quote.rs"
 
-[dependencies]
+[dev-dependencies]
 syn = "2"
 quote = "1"
-parsyng-core = { path = "../crates/parsyng-core" }
+parsyng-core = { path = "../crates/parsyng-core", features = ["proc-macro2"] }

@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -92,7 +92,7 @@ impl Parse for UseTree {
 }
 
 impl ToTokens for UseItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.use_token.to_tokens(tokens);
         self.tree.to_tokens(tokens);
         self.semi.to_tokens(tokens);
@@ -100,7 +100,7 @@ impl ToTokens for UseItem {
 }
 
 impl ToTokens for UseTree {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             UseTree::Path(path) => path.to_tokens(tokens),
             UseTree::Name(name) => name.to_tokens(tokens),
@@ -112,7 +112,7 @@ impl ToTokens for UseTree {
 }
 
 impl ToTokens for UsePath {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.ident.to_tokens(tokens);
         self.colon.to_tokens(tokens);
         self.tree.to_tokens(tokens);
@@ -120,7 +120,7 @@ impl ToTokens for UsePath {
 }
 
 impl ToTokens for UseRename {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.ident.to_tokens(tokens);
         self.as_token.to_tokens(tokens);
         self.rename.to_tokens(tokens);
@@ -128,7 +128,7 @@ impl ToTokens for UseRename {
 }
 
 impl ToTokens for UseGroup {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.group.to_tokens(tokens);
     }
 }

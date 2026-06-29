@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -105,7 +105,7 @@ impl Parse for TraitFunction {
 }
 
 impl ToTokens for TraitItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.unsafety.to_tokens(tokens);
         self.auto_token.to_tokens(tokens);
         self.trait_token.to_tokens(tokens);
@@ -118,14 +118,14 @@ impl ToTokens for TraitItem {
 }
 
 impl ToTokens for TraitItemMember {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.kind.to_tokens(tokens);
     }
 }
 
 impl ToTokens for TraitItemKind {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             TraitItemKind::Type(item) => item.to_tokens(tokens),
             TraitItemKind::Const(item) => item.to_tokens(tokens),
@@ -135,14 +135,14 @@ impl ToTokens for TraitItemKind {
 }
 
 impl ToTokens for TraitFunction {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.signature.to_tokens(tokens);
         self.body.to_tokens(tokens);
     }
 }
 
 impl ToTokens for TraitFunctionBody {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             TraitFunctionBody::Block(block) => block.to_tokens(tokens),
             TraitFunctionBody::Semicolon(semicolon) => semicolon.to_tokens(tokens),

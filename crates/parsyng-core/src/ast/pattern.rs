@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -106,7 +106,7 @@ impl Parse for PatRef {
 }
 
 impl ToTokens for Pattern {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             Pattern::Ident(ident) => ident.to_tokens(tokens),
             Pattern::Wildcard(wildcard) => wildcard.to_tokens(tokens),
@@ -117,7 +117,7 @@ impl ToTokens for Pattern {
 }
 
 impl ToTokens for PatIdent {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.by_ref.to_tokens(tokens);
         self.mutability.to_tokens(tokens);
         self.ident.to_tokens(tokens);
@@ -125,19 +125,19 @@ impl ToTokens for PatIdent {
 }
 
 impl ToTokens for PatWildcard {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.underscore.to_tokens(tokens);
     }
 }
 
 impl ToTokens for PatTuple {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.elems.to_tokens(tokens);
     }
 }
 
 impl ToTokens for PatRef {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.and_token.to_tokens(tokens);
         self.mutability.to_tokens(tokens);
         self.pat.to_tokens(tokens);

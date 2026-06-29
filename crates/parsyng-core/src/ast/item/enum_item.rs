@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -100,7 +100,7 @@ impl Parse for EnumField {
 }
 
 impl ToTokens for EnumItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.enum_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.generics.to_tokens(tokens);
@@ -110,7 +110,7 @@ impl ToTokens for EnumItem {
 }
 
 impl ToTokens for EnumVariant {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.fields.to_tokens(tokens);
@@ -119,7 +119,7 @@ impl ToTokens for EnumVariant {
 }
 
 impl ToTokens for EnumVariantFields {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             EnumVariantFields::Named(fields) => fields.to_tokens(tokens),
             EnumVariantFields::Unnamed(fields) => fields.to_tokens(tokens),
@@ -129,7 +129,7 @@ impl ToTokens for EnumVariantFields {
 }
 
 impl ToTokens for EnumField {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.colon.to_tokens(tokens);

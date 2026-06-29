@@ -246,7 +246,7 @@ impl Parse for Type {
             return Ok(Self::Never(never));
         }
         if let Ok(bare_fn) = input.try_parse() {
-        return Ok(Self::BareFn(Box::new(bare_fn)));
+            return Ok(Self::BareFn(Box::new(bare_fn)));
         }
         if let Ok(impl_trait) = input.try_parse() {
             return Ok(Self::ImplTrait(impl_trait));
@@ -305,7 +305,7 @@ impl ToTokens for TypePath {
 }
 
 impl ToTokens for TypeReference {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.and_token.to_tokens(tokens);
         self.lifetime.to_tokens(tokens);
         self.mutability.to_tokens(tokens);
@@ -314,7 +314,7 @@ impl ToTokens for TypeReference {
 }
 
 impl ToTokens for TypePointer {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.star_token.to_tokens(tokens);
         self.kind.to_tokens(tokens);
         self.elem.to_tokens(tokens);
@@ -322,7 +322,7 @@ impl ToTokens for TypePointer {
 }
 
 impl ToTokens for TypePointerKind {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             TypePointerKind::Const(const_token) => const_token.to_tokens(tokens),
             TypePointerKind::Mut(mut_token) => mut_token.to_tokens(tokens),
@@ -331,7 +331,7 @@ impl ToTokens for TypePointerKind {
 }
 
 impl ToTokens for TypeArray {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.elem.to_tokens(tokens);
         self.semicolon.to_tokens(tokens);
         self.len.to_tokens(tokens);
@@ -339,21 +339,21 @@ impl ToTokens for TypeArray {
 }
 
 impl ToTokens for TypeImplTrait {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.impl_token.to_tokens(tokens);
         self.bounds.to_tokens(tokens);
     }
 }
 
 impl ToTokens for TypeDynTrait {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.dyn_token.to_tokens(tokens);
         self.bounds.to_tokens(tokens);
     }
 }
 
 impl ToTokens for TypeBareFn {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.unsafety.to_tokens(tokens);
         self.extern_token.to_tokens(tokens);
         self.fn_token.to_tokens(tokens);
@@ -363,7 +363,7 @@ impl ToTokens for TypeBareFn {
 }
 
 impl ToTokens for BareFnParam {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
             BareFnParam::Type(ty) => ty.to_tokens(tokens),
             BareFnParam::Variadic(variadic) => variadic.to_tokens(tokens),
@@ -372,7 +372,7 @@ impl ToTokens for BareFnParam {
 }
 
 impl ToTokens for TypeQualifiedPath {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.lt_token.to_tokens(tokens);
         self.ty.to_tokens(tokens);
         self.as_token.to_tokens(tokens);

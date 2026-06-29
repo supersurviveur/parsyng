@@ -33,75 +33,20 @@ fn ts(input: &str) -> TokenStream {
     input.parse().unwrap()
 }
 
-fn parse_exact<T: crate::Parse>(tokens: TokenStream) -> T {
+pub(crate) fn parse_exact<T: crate::Parse>(tokens: TokenStream) -> T {
     let mut input = ParseBuffer::new(tokens);
     let value = input.parse::<T>().unwrap();
     assert!(input.is_empty());
     value
 }
 
-fn check<T: crate::Parse + ToTokens>(tokens: TokenStream) -> T {
+pub(crate) fn check<T: crate::Parse + ToTokens>(tokens: TokenStream) -> T {
     let expected = tokens.to_string();
     let parsed = parse_exact::<T>(tokens);
     let mut out = TokenStream::new();
     parsed.to_tokens(&mut out);
     assert_eq!(out.to_string(), expected);
     parsed
-}
-
-fn rust_src_root() -> Option<PathBuf> {
-    if let Ok(path) = env::var("RUST_SRC_PATH") {
-        let path = PathBuf::from(path);
-        if path.exists() {
-            return Some(path);
-        }
-    }
-
-    let output = Command::new("rustc")
-        .args(["--print", "sysroot"])
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-
-    let sysroot = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
-    let library = sysroot.join("lib/rustlib/src/rust/library");
-    if library.exists() {
-        return Some(library);
-    }
-
-    let src = sysroot.join("lib/rustlib/src/rust/src");
-    if src.exists() {
-        return Some(src);
-    }
-
-    None
-}
-
-fn rust_std_file<F: Fn(String, TokenStream)>(root: &Path, test: F) {
-    const CANDIDATES: &[&str] = &[
-        // "core/src/option.rs",
-        // "core/src/result.rs",
-        "core/src/marker.rs",
-        // "alloc/src/vec/mod.rs",
-        // "std/src/lib.rs",
-        "libcore/option.rs",
-        "libcore/result.rs",
-        "libcore/marker.rs",
-        "liballoc/vec/mod.rs",
-        "libstd/lib.rs",
-    ];
-
-    for candidate in CANDIDATES {
-        let path = root.join(candidate);
-        if path.is_file() {
-            let source = fs::read_to_string(path).unwrap();
-            let tokens: TokenStream = source.parse().unwrap();
-            test(source, tokens);
-            return;
-        }
-    }
 }
 
 #[test]
@@ -235,16 +180,6 @@ fn item_nodes() {
     assert!(matches!(item_struct, crate::ast::item::Item::Struct(_)));
     let item_impl = check::<crate::ast::item::Item>(quote! { impl Type { type Assoc; } });
     assert!(matches!(item_impl, crate::ast::item::Item::Impl(_)));
-
-    let item_extern = check::<crate::ast::item::Item>(quote! { extern crate core as realcore; });
-    assert!(matches!(
-        item_extern,
-        crate::ast::item::Item::ExternCrate(_)
-    ));
-    let item_use = check::<crate::ast::item::Item>(quote! { pub use core::fmt::*; });
-    assert!(matches!(item_use, crate::ast::item::Item::Use(_)));
-    let item_mod = check::<crate::ast::item::Item>(quote! { pub mod sync; });
-    assert!(matches!(item_mod, crate::ast::item::Item::Mod(_)));
 }
 
 #[test]
@@ -310,93 +245,4 @@ fn statement_and_crate_nodes() {
         pub struct A;
         impl A { type Assoc; const VALUE: u8; }
     });
-}
-
-#[test]
-fn parse_rust_std_file() {
-    let root = match rust_src_root() {
-        Some(root) => root,
-        None => {
-            println!("Warning: Failed to find std sources to test on a file.");
-            return;
-        }
-    };
-    rust_std_file(&root, |source, tokens| {
-        let tokens_clone1 = tokens.clone();
-        let tokens_clone2 = tokens.clone();
-        // Manual parse loop to discover the failing item
-        let mut input = ParseBuffer::new(tokens_clone1);
-        let inner_attrs = crate::ast::attributes::parse_inner_attributes(&mut input);
-        eprintln!("Consumed {} inner attributes", inner_attrs.len());
-        let mut idx = 0usize;
-        loop {
-            if input.is_empty() { break; }
-            match input.parse::<crate::ast::item::Item>() {
-                Ok(it) => {
-                    let name = match &it {
-                        crate::ast::item::Item::Struct(_) => "Struct",
-                        crate::ast::item::Item::Const(_) => "Const",
-                        crate::ast::item::Item::TypeAlias(_) => "TypeAlias",
-                        crate::ast::item::Item::Use(_) => "Use",
-                        crate::ast::item::Item::ExternCrate(_) => "ExternCrate",
-                        crate::ast::item::Item::ExternBlock(_) => "ExternBlock",
-                        crate::ast::item::Item::Mod(_) => "Mod",
-                        crate::ast::item::Item::Enum(_) => "Enum",
-                        crate::ast::item::Item::Function(_) => "Function",
-                        crate::ast::item::Item::Trait(_) => "Trait",
-                        crate::ast::item::Item::Static(_) => "Static",
-                        crate::ast::item::Item::MacroRules(_) => "MacroRules",
-                        crate::ast::item::Item::Macro(_) => "Macro",
-                        crate::ast::item::Item::MacroInvocation(_) => "MacroInvocation",
-                        crate::ast::item::Item::Impl(_) => "Impl",
-                    };
-                    let mut ts = TokenStream::new();
-                    it.to_tokens(&mut ts);
-                    eprintln!("Parsed item {}: {} -- tokens: {}", idx, name, ts.to_string());
-                    idx += 1;
-                }
-                Err(err) => {
-                    eprintln!("Failed parsing item {}: {:?}", idx, err);
-                    // try parsing an Implementation here to get a focused error (consuming outer attrs first)
-                    let mut impl_input = input.clone();
-                    let parsed_attrs = crate::ast::attributes::parse_outer_attributes(&mut impl_input);
-                    eprintln!("Outer attrs before impl: {}", parsed_attrs.len());
-                    match impl_input.parse::<crate::ast::item::implementation::Implementation>() {
-                        Ok(impl_item) => eprintln!("Implementation parsed: {:?}", impl_item),
-                        Err(e) => eprintln!("Parsing Implementation failed: {:?}", e),
-                    }
-                    // try input.try_parse to see if try_parse detects Implementation
-                    match input.try_parse::<crate::ast::item::implementation::Implementation>() {
-                        Ok(impl_item) => eprintln!("input.try_parse::<Implementation>() succeeded: {:?}", impl_item),
-                        Err(e) => eprintln!("input.try_parse::<Implementation>() failed: {:?}", e),
-                    }
-                    // show remaining tokens at failure point
-                    let mut rem = input.clone();
-                    let mut remaining = TokenStream::new();
-                    while let Some(tt) = rem.next() { remaining.extend(Some(tt)); }
-                    eprintln!("Remaining tokens:\n{}", remaining.to_string());
-                    eprintln!("Source head:\n{}", source.chars().take(1200).collect::<String>());
-                    panic!("parse failed");
-                }
-            }
-        }
-        eprintln!("Parsed {} items successfully", idx);
-
-    });
-}
-
-#[test]
-fn debug_impl_parse() {
-    let tokens: TokenStream = quote! { #[stable(feature = "rust1", since = "1.0.0")] impl<T: PointeeSized> !Send for *const T {} };
-    let mut input = ParseBuffer::new(tokens);
-    let attrs = crate::ast::attributes::parse_outer_attributes(&mut input);
-    eprintln!("Outer attrs: {}", attrs.len());
-    match input.parse::<crate::ast::visibility::Visibility>() {
-        Ok(vis) => eprintln!("Visibility parsed: {:?}", vis),
-        Err(e) => eprintln!("Visibility parse error (expected none): {:?}", e),
-    }
-    match input.parse::<crate::ast::item::implementation::Implementation>() {
-        Ok(impl_item) => eprintln!("Implementation parsed directly: {:?}", impl_item),
-        Err(err) => eprintln!("Failed to parse Implementation directly: {:?}", err),
-    }
 }

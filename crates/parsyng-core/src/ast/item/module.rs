@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -39,7 +39,7 @@ impl Parse for ModItem {
 }
 
 impl ToTokens for ModItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.mod_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.content.to_tokens(tokens);

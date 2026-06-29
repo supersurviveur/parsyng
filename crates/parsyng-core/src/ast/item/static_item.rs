@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -36,7 +36,7 @@ impl Parse for StaticItem {
 }
 
 impl ToTokens for StaticItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.static_token.to_tokens(tokens);
         self.mut_token.to_tokens(tokens);
         self.ident.to_tokens(tokens);

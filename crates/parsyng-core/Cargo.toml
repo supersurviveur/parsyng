@@ -15,5 +15,5 @@ unicode-ident = "1"
 proc-macro2 = { version = "1", optional = true }
 
 [features]
-proc-macro2 = ["dep:proc-macro2"]
+proc-macro2 = ["dep:proc-macro2", "proc-macro2/span-locations"]
 debug-pretty = []

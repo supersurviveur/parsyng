@@ -200,8 +200,10 @@ mod tests {
 
     #[bench]
     fn bench_parsyng(b: &mut Bencher) {
+        
         let ident = parsyng_core::format_ident!("Response");
         b.iter(|| {
+            use parsyng_core as parsyng;
             black_box(parsyng_core::quote! {
 
                 impl<'de> _serde::Deserialize<'de> for #{ ident } {

@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::error::{Diagnostics, Result};
 use crate::parse::{Parse, ParseBuffer};

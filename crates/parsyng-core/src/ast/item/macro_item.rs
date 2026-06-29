@@ -1,4 +1,4 @@
-use parsyng_quote::ToTokens;
+use crate::ToTokens;
 
 use crate::{
     ast::{
@@ -36,6 +36,7 @@ pub struct MacroInvocationItem {
 impl Parse for MacroRulesItem {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let macro_rules_ident: Ident = input.parse()?;
+        #[allow(clippy::cmp_owned)]
         if macro_rules_ident.to_string() != "macro_rules" {
             return Err(Diagnostics::new_error_spanned(
                 "Expected `macro_rules`",
@@ -77,7 +78,7 @@ impl Parse for MacroInvocationItem {
 }
 
 impl ToTokens for MacroRulesItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.macro_rules_ident.to_tokens(tokens);
         self.bang.to_tokens(tokens);
         self.name.to_tokens(tokens);
@@ -86,7 +87,7 @@ impl ToTokens for MacroRulesItem {
 }
 
 impl ToTokens for MacroItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.macro_token.to_tokens(tokens);
         self.name.to_tokens(tokens);
         tokens.extend(Some(self.body.clone()));
@@ -94,7 +95,7 @@ impl ToTokens for MacroItem {
 }
 
 impl ToTokens for MacroInvocationItem {
-    fn to_tokens(&self, tokens: &mut parsyng_quote::proc_macro::TokenStream) {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.path.to_tokens(tokens);
         self.bang.to_tokens(tokens);
         tokens.extend(Some(self.body.clone()));
