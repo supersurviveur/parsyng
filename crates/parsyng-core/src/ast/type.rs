@@ -1,5 +1,6 @@
 use crate::ToTokens;
 
+use crate::ast::item::macro_item::MacroInvocationItem;
 use crate::{
     ast::{
         delimiter::{Bracketed, Parenthesized},
@@ -18,18 +19,19 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub enum Type {
-    Path(Box<TypePath>),
-    Reference(TypeReference),
-    Pointer(TypePointer),
-    Tuple(Box<Parenthesized<Punctuated<Type, Comma>>>),
     Paren(Box<Parenthesized<Type>>),
+    ImplTrait(TypeImplTrait),
+    Path(Box<TypePath>),
+    Tuple(Box<Parenthesized<Punctuated<Type, Comma>>>),
+    Never(Not),
+    Pointer(TypePointer),
+    Reference(TypeReference),
     Array(Box<Bracketed<TypeArray>>),
     Slice(Box<Bracketed<Type>>),
-    ImplTrait(TypeImplTrait),
     DynTrait(TypeDynTrait),
-    BareFn(Box<TypeBareFn>),
     QualifiedPath(TypeQualifiedPath),
-    Never(Not),
+    BareFn(Box<TypeBareFn>),
+    MacroInvocation(MacroInvocationItem),
 }
 
 #[derive(Clone, Debug)]
@@ -257,6 +259,9 @@ impl Parse for Type {
         if let Ok(qualified) = input.try_parse() {
             return Ok(Self::QualifiedPath(qualified));
         }
+        if let Ok(macro_invocation) = input.try_parse() {
+            return Ok(Self::MacroInvocation(macro_invocation));
+        }
         if let Some(group) = input.peek_group() {
             match group.delimiter() {
                 Delimiter::Parenthesis => {
@@ -396,6 +401,7 @@ impl ToTokens for Type {
             Type::BareFn(bare_fn) => bare_fn.to_tokens(tokens),
             Type::QualifiedPath(qualified) => qualified.to_tokens(tokens),
             Type::Never(never) => never.to_tokens(tokens),
+            Type::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
         }
     }
 }

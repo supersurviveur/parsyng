@@ -1,5 +1,8 @@
 use crate::ToTokens;
+use crate::ast::delimiter::Parenthesized;
+use crate::ast::tokens::{Eq, RArrow};
 
+use crate::combinator::Either;
 use crate::{
     ast::{
         item::Lifetime,
@@ -40,7 +43,19 @@ impl ToTokens for SimplePath {
 #[derive(Clone, Debug)]
 pub struct TypePathSegment {
     path_ident: Ident,
-    args: Option<(Option<PathSep>, GenericArgs)>,
+    args: Option<(Option<PathSep>, Either<GenericArgs, TypePathFn>)>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypePathFn {
+    inputs: Parenthesized<Option<TypePathFnInputs>>,
+    return_type: Option<(RArrow, Box<Type>)>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypePathFnInputs {
+    args: Punctuated<Comma, Type>,
+    trailing_comma: Option<Comma>,
 }
 
 #[derive(Clone, Debug)]
@@ -54,6 +69,7 @@ pub struct GenericArgs {
 pub enum GenericArg {
     Type(Box<Type>),
     Lifetime(Lifetime),
+    Bindings(Ident, Option<Box<GenericArgs>>, Eq, Box<Type>),
 }
 
 impl ToTokens for TypePathSegment {
@@ -79,13 +95,23 @@ impl ToTokens for GenericArg {
         match self {
             GenericArg::Type(ty) => ty.to_tokens(tokens),
             GenericArg::Lifetime(lifetime) => lifetime.to_tokens(tokens),
+            GenericArg::Bindings(ident, generics, eq, ty) => {
+                (ident, generics, eq, ty).to_tokens(tokens)
+            }
         }
     }
 }
 
 impl Parse for GenericArg {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        if let Ok(ty) = input.try_parse() {
+        if let Ok((ident, generics, eq, ty)) = input.try_parse::<(_, Option<Peekable<_>>, _, _)>() {
+            Ok(Self::Bindings(
+                ident,
+                generics.map(|peekable| peekable.inner()),
+                eq,
+                ty,
+            ))
+        } else if let Ok(ty) = input.try_parse() {
             Ok(Self::Type(Box::new(ty)))
         } else if let Ok(lifetime) = input.try_parse() {
             Ok(Self::Lifetime(lifetime))
@@ -111,5 +137,53 @@ impl Parse for GenericArgs {
             generics: input.parse()?,
             last_token: input.parse()?,
         })
+    }
+}
+impl ToTokens for TypePathFn {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        self.inputs.to_tokens(tokens);
+        self.return_type.to_tokens(tokens);
+    }
+}
+
+impl Parse for TypePathFn {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            inputs: input
+                .parse::<Parenthesized<Option<Peekable<_>>>>()?
+                .map(|inputs| inputs.map(|inner| inner.inner())),
+            return_type: input.try_parse().ok(),
+        })
+    }
+}
+impl ToTokens for TypePathFnInputs {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        self.args.to_tokens(tokens);
+        self.trailing_comma.to_tokens(tokens);
+    }
+}
+
+impl Parse for TypePathFnInputs {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        Ok(Self {
+            args: input.parse()?,
+            trailing_comma: input.parse()?,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate as parsyng;
+    use parsyng_quote_macros::quote;
+
+    use super::*;
+    use crate::ast::tests::check;
+
+    #[test]
+    fn test_type_path() {
+        check::<TypePathSegment>(quote! {
+            Iterator<Item = &Attribute>
+        });
     }
 }

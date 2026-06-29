@@ -1,9 +1,9 @@
+use crate::ToTokens;
 use crate::{
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer},
     proc_macro::{Delimiter, Group, Span, TokenStream},
 };
-use crate::ToTokens;
 
 use std::ops::{Deref, DerefMut};
 
@@ -23,6 +23,9 @@ macro_rules! make_delimiters {
             }
             pub fn span(&self) -> Span {
                 self.group.span()
+            }
+            pub fn map<R, F: FnOnce(T) -> R>(self, f: F) -> $name<R> {
+                $name::<R>::new(self.group, f(self.content))
             }
         }
 

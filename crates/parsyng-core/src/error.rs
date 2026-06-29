@@ -24,7 +24,7 @@ impl Diagnostic {
 impl Diagnostics {
     #[must_use]
     pub fn empty() -> Self {
-        Self(vec![])
+        Self(Vec::new())
     }
     #[must_use]
     pub fn new(diagnostic: Diagnostic) -> Self {
@@ -37,6 +37,9 @@ impl Diagnostics {
     #[must_use]
     pub fn new_error_spanned<T: Into<String>>(error: T, span: Span) -> Self {
         Self::new(Diagnostic::new(error, span))
+    }
+    pub fn append(&mut self, diagnostic: Diagnostic) {
+        self.0.push(diagnostic)
     }
     pub fn join(&mut self, other: Self) {
         self.0.extend(other.0)

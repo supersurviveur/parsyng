@@ -2,6 +2,8 @@ use std::{marker::PhantomData, vec::IntoIter};
 
 use crate::ToTokens;
 
+use crate::error::Diagnostics;
+use crate::parse::Invalid;
 use crate::{
     error::Result,
     parse::{Nothing, Parse, ParseBuffer, Peek},
@@ -217,5 +219,55 @@ impl<T: Parse> Parse for GreedyVec<T> {
         }
 
         Ok(Self { inner: content })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Either<A, B, C = Invalid, D = Invalid, E = Invalid> {
+    First(A),
+    Second(B),
+    Third(C),
+    Fourth(D),
+    Fifth(E),
+}
+
+impl<A: Parse, B: Parse, C: Parse, D: Parse, E: Parse> Parse for Either<A, B, C, D, E> {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        let mut diagnostics = Diagnostics::empty();
+        match input.try_parse() {
+            Ok(first) => return Ok(Self::First(first)),
+            Err(err) => diagnostics.join(err),
+        }
+        match input.try_parse() {
+            Ok(second) => return Ok(Self::Second(second)),
+            Err(err) => diagnostics.join(err),
+        }
+        match input.try_parse() {
+            Ok(third) => return Ok(Self::Third(third)),
+            Err(err) => diagnostics.join(err),
+        }
+        match input.try_parse() {
+            Ok(fourth) => return Ok(Self::Fourth(fourth)),
+            Err(err) => diagnostics.join(err),
+        }
+        match input.try_parse() {
+            Ok(fifth) => return Ok(Self::Fifth(fifth)),
+            Err(err) => diagnostics.join(err),
+        }
+        Err(diagnostics)
+    }
+}
+
+impl<A: ToTokens, B: ToTokens, C: ToTokens, D: ToTokens, E: ToTokens> ToTokens
+    for Either<A, B, C, D, E>
+{
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        match self {
+            Either::First(first) => first.to_tokens(tokens),
+            Either::Second(second) => second.to_tokens(tokens),
+            Either::Third(third) => third.to_tokens(tokens),
+            Either::Fourth(fourth) => fourth.to_tokens(tokens),
+            Either::Fifth(fifth) => fifth.to_tokens(tokens),
+        }
     }
 }

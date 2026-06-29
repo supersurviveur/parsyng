@@ -2,6 +2,7 @@ use core::iter;
 
 use crate::ToTokens;
 
+use crate::error::Diagnostics;
 use crate::{
     error::Result,
     proc_macro::{Group, Ident, Punct, Span, TokenStream, TokenTree, token_stream::IntoIter},
@@ -163,7 +164,9 @@ impl Iterator for ParseBuffer {
 }
 
 pub trait Parse {
-    fn parse(input: &mut ParseBuffer) -> Result<Self> where Self: Sized;
+    fn parse(input: &mut ParseBuffer) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 pub trait Peek: Parse {}
@@ -206,5 +209,25 @@ impl ToTokens for Nothing {
 impl<T: Parse> Parse for Box<T> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         Ok(Box::new(input.parse()?))
+    }
+}
+
+#[derive(Clone, Default, Debug)]
+pub struct Invalid;
+
+impl Parse for Invalid {
+    #[inline]
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Err(Diagnostics::new_error_spanned(
+            "Invalid cannot be parsed",
+            input.span(),
+        ))
+    }
+}
+
+impl ToTokens for Invalid {
+    #[inline]
+    fn to_tokens(&self, _tokens: &mut TokenStream) {
+        unimplemented!("`Invalid` can not be converted to tokens")
     }
 }
