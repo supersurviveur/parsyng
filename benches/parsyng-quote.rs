@@ -200,13 +200,11 @@ mod tests {
 
     #[bench]
     fn bench_parsyng(b: &mut Bencher) {
-        
         let ident = parsyng_core::format_ident!("Response");
         b.iter(|| {
             use parsyng_core as parsyng;
             black_box(parsyng_core::quote! {
-
-                impl<'de> _serde::Deserialize<'de> for #{ ident } {
+                impl<'de> _serde::Deserialize<'de> for #ident {
                     fn deserialize<__D>(__deserializer: __D) -> _serde::export::Result<Self, __D::Error>
                     where
                         __D: _serde::Deserializer<'de>,
@@ -273,11 +271,11 @@ mod tests {
                             }
                         }
                         struct __Visitor<'de> {
-                            marker: _serde::export::PhantomData<#{ ident }>,
+                            marker: _serde::export::PhantomData<#ident>,
                             lifetime: _serde::export::PhantomData<&'de ()>,
                         }
-                        impl<'de> _serde::de::Visitor<'de> for __Visitor<'de> 
-                            type Value = {#{ ident }};
+                        impl<'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                            type Value = #ident;
                             fn expecting(
                                 &self,
                                 __formatter: &mut _serde::export::Formatter,
@@ -312,7 +310,7 @@ mod tests {
                                             ));
                                         }
                                     };
-                                _serde::export::Ok(#{ ident } {
+                                _serde::export::Ok(#ident {
                                     id: __field0,
                                     s: __field1,
                                 })
@@ -366,16 +364,16 @@ mod tests {
                                     _serde::export::Some(__field1) => __field1,
                                     _serde::export::None => try!(_serde::private::de::missing_field("s")),
                                 };
-                                _serde::export::Ok(#{ ident } {
+                                _serde::export::Ok(#ident {
                                     id: __field0,
                                     s: __field1,
                                 })
                             }
-                        
+                        }
                         const FIELDS: &'static [&'static str] = &["id", "s"];
                         _serde::Deserializer::deserialize_struct(
                             __deserializer,
-                            stringify!(#{ ident }),
+                            stringify!(#ident),
                             FIELDS,
                             __Visitor {
                                 marker: _serde::export::PhantomData::<#ident>,
