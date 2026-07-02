@@ -4,13 +4,10 @@ use crate::{
     ast::{
         attributes::parse_outer_attributes,
         delimiter::Braced,
-        item::{
-            constant::ConstantItem,
-            associated::TypeAlias,
-        },
+        item::TypeParamBounds,
+        item::{associated::TypeAlias, constant::ConstantItem},
         signature::FnSignature,
         tokens::{Auto, Colon, Trait, Unsafe},
-        item::TypeParamBounds,
     },
     error::Diagnostics,
     parse::Parse,
@@ -37,9 +34,9 @@ pub struct TraitItemMember {
 
 #[derive(Clone, Debug)]
 pub enum TraitItemKind {
-    Type(TypeAlias),
-    Const(ConstantItem),
-    Function(TraitFunction),
+    Type(Box<TypeAlias>),
+    Const(Box<ConstantItem>),
+    Function(Box<TraitFunction>),
 }
 
 #[derive(Clone, Debug)]

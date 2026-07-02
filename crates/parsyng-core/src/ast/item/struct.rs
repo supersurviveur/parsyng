@@ -127,8 +127,8 @@ pub struct StructField {
 
 #[derive(Clone, Debug)]
 pub enum StructFields {
-    Named(Braced<Punctuated<StructField, Comma>>),
-    Unnamed(Parenthesized<Punctuated<TupleField, Comma>>),
+    Named(Box<Braced<Punctuated<StructField, Comma>>>),
+    Unnamed(Box<Parenthesized<Punctuated<TupleField, Comma>>>),
     Unit,
 }
 

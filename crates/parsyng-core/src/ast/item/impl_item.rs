@@ -20,9 +20,9 @@ pub struct ImplItem {
 
 #[derive(Clone, Debug)]
 pub enum ImplItemKind {
-    Type(TypeAlias),
-    Const(ConstantItem),
-    Function(ItemFunction),
+    Type(Box<TypeAlias>),
+    Const(Box<ConstantItem>),
+    Function(Box<ItemFunction>),
     Macro(MacroInvocationItem),
 }
 

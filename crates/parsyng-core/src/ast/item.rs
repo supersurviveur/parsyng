@@ -52,13 +52,13 @@ pub mod r#use;
 pub enum Item {
     Struct(ItemStruct),
     Const(ItemConst),
-    TypeAlias(ItemTypeAlias),
+    TypeAlias(Box<ItemTypeAlias>),
     Use(ItemUse),
     ExternCrate(ItemExternCrate),
     ExternBlock(ItemExternBlock),
     Mod(ItemMod),
     Enum(ItemEnum),
-    Function(ItemFunction),
+    Function(Box<ItemFunction>),
     Trait(ItemTrait),
     Static(ItemStatic),
     MacroRules(ItemMacroRules),
@@ -148,11 +148,11 @@ impl Parse for Item {
                 item: const_item,
             }))
         } else if let Ok(type_alias) = input.try_parse() {
-            Ok(Self::TypeAlias(VisItem {
+            Ok(Self::TypeAlias(Box::new(VisItem {
                 attributes,
                 visibility,
                 item: type_alias,
-            }))
+            })))
         } else if let Ok(r#use) = input.try_parse() {
             Ok(Self::Use(VisItem {
                 attributes,
@@ -184,11 +184,11 @@ impl Parse for Item {
                 item: enum_item,
             }))
         } else if let Ok(function_item) = input.try_parse() {
-            Ok(Self::Function(VisItem {
+            Ok(Self::Function(Box::new(VisItem {
                 attributes,
                 visibility,
                 item: function_item,
-            }))
+            })))
         } else if let Ok(trait_item) = input.try_parse() {
             Ok(Self::Trait(VisItem {
                 attributes,
@@ -308,9 +308,9 @@ pub struct GenericParams {
 
 #[derive(Clone, Debug)]
 pub enum GenericParam {
-    Type(TypeParam),
+    Type(Box<TypeParam>),
     Lifetime(LifetimeParam),
-    Const(ConstParam),
+    Const(Box<ConstParam>),
 }
 
 #[derive(Clone, Debug)]

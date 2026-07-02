@@ -29,7 +29,7 @@ pub enum Type {
     Array(Box<Bracketed<TypeArray>>),
     Slice(Box<Bracketed<Type>>),
     DynTrait(TypeDynTrait),
-    QualifiedPath(TypeQualifiedPath),
+    QualifiedPath(Box<TypeQualifiedPath>),
     BareFn(Box<TypeBareFn>),
     MacroInvocation(MacroInvocationItem),
 }
