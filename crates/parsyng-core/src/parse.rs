@@ -10,19 +10,23 @@ use crate::{
 
 #[derive(Clone)]
 pub struct ParseBuffer {
+    last_span: Span,
     inner: iter::Peekable<IntoIter>,
 }
 
 impl ParseBuffer {
     #[must_use]
     pub fn new(inner: crate::proc_macro::TokenStream) -> Self {
+        let mut inner = inner.into_iter().peekable();
         Self {
-            inner: inner.into_iter().peekable(),
+            last_span: inner.peek().map_or(Span::call_site(), |tt| tt.span()),
+            inner,
         }
     }
 
     pub fn span(&mut self) -> Span {
-        self.peek().map_or(Span::call_site(), |tt| tt.span())
+        let last_span = self.last_span;
+        self.peek().map_or(last_span, |tt| tt.span())
     }
 
     pub fn is_empty(&mut self) -> bool {
@@ -159,7 +163,13 @@ impl Iterator for ParseBuffer {
     type Item = TokenTree;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        match self.inner.next() {
+            Some(tt) => {
+                self.last_span = tt.span();
+                Some(tt)
+            }
+            None => None,
+        }
     }
 }
 

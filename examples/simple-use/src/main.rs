@@ -17,8 +17,9 @@ fn main() {
     };
 }
 
-#[simple_macro_attribute(88)]
+#[simple_macro_attribute(88, sen)]
 struct A {}
 
 #[derive(Simple)]
 struct _B {}
+
