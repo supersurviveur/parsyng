@@ -66,7 +66,7 @@ macro_rules! unsigned_integer_impls {
                         return Err(Diagnostics::new_error_spanned(format!(concat!("Expected ", stringify!($ty), ", found `{}`"), lit.suffix()), lit.span()));
                     }
                     lit.content().parse::<$ty>().map_err(|err| {
-                        Diagnostics::new_error_spanned(format!("Failed to parse literal: {}", err), lit.span())
+                        Diagnostics::new_error_spanned(format!(concat!("Failed to parse ", stringify!($ty)," literal: {}"), err), lit.span())
                     })
                 })
             }
@@ -104,7 +104,10 @@ impl Parse for Literal {
                 }
             }
         }
-        Err(Diagnostics::new_error("Expected literal"))
+        Err(Diagnostics::new_error_spanned(
+            "Expected literal",
+            input.span(),
+        ))
     }
 }
 
@@ -114,7 +117,10 @@ impl Parse for LiteralNumber {
             let literal_str = literal.to_string();
             return parse_integer_literal(literal_str, literal.span());
         }
-        Err(Diagnostics::new_error("Expected number literal"))
+        Err(Diagnostics::new_error_spanned(
+            "Expected number literal",
+            input.span(),
+        ))
     }
 }
 
@@ -124,7 +130,10 @@ impl Parse for LiteralFloat {
             let literal_str = literal.to_string();
             return parse_float_literal(literal_str, literal.span());
         }
-        Err(Diagnostics::new_error("Expected float literal"))
+        Err(Diagnostics::new_error_spanned(
+            "Expected float literal",
+            input.span(),
+        ))
     }
 }
 

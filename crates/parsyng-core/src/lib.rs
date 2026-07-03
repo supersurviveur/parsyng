@@ -35,13 +35,19 @@ macro_rules! parse_quote {
 
 #[macro_export]
 macro_rules! format_ident {
-    ($($args:tt),*) => {
-        $crate::proc_macro::Ident::new(&format!($($args,)*), $crate::proc_macro::Span::call_site())
+    ($($args:tt)*) => {
+        $crate::proc_macro::Ident::new(&format!($($args)*), $crate::proc_macro::Span::call_site())
     };
 }
 
 pub trait ToTokens {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream);
+
+    fn to_token_stream(&self) -> crate::proc_macro::TokenStream {
+        let mut token_stream = crate::proc_macro::TokenStream::new();
+        self.to_tokens(&mut token_stream);
+        token_stream
+    }
 }
 
 #[doc(hidden)]

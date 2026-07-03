@@ -163,6 +163,12 @@ impl Iterator for ParseBuffer {
     }
 }
 
+impl ToTokens for ParseBuffer {
+    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
+        tokens.extend(self.clone());
+    }
+}
+
 pub trait Parse {
     fn parse(input: &mut ParseBuffer) -> Result<Self>
     where
@@ -191,13 +197,12 @@ impl<T: Parse> Parse for Peekable<T> {
 
 impl<T: Parse> Peek for Peekable<T> {}
 
-#[derive(Clone, Default, Debug)]
-pub struct Nothing;
+pub type Nothing = ();
 
 impl Parse for Nothing {
     #[inline]
     fn parse(_input: &mut ParseBuffer) -> Result<Self> {
-        Ok(Self)
+        Ok(())
     }
 }
 

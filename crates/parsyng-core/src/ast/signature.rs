@@ -52,9 +52,32 @@ pub struct PatType {
     ty: Type,
 }
 
+impl FnParam {
+    pub fn ty(&self) -> Option<&Type> {
+        match self {
+            FnParam::SelfParam(self_param) => self_param.typed.as_ref().map(|x| &x.1),
+            FnParam::Typed(pat_type) => Some(&pat_type.ty),
+            FnParam::Variadic(_) => None,
+        }
+    }
+    pub fn ident(&self) -> Option<&Ident> {
+        match self {
+            FnParam::SelfParam(_) => todo!(),
+            FnParam::Typed(pat_type) => pat_type.pat.ident(),
+            FnParam::Variadic(_) => None,
+        }
+    }
+}
+
 impl FnSignature {
     pub fn ident(&self) -> &Ident {
         &self.ident
+    }
+    pub fn return_type(&self) -> Option<&Type> {
+        self.return_type.as_ref().map(|x| &x.1)
+    }
+    pub fn args(&self) -> &Punctuated<FnParam, Comma> {
+        self.params.inner_ref()
     }
 }
 

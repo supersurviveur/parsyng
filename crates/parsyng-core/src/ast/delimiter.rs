@@ -24,6 +24,12 @@ macro_rules! make_delimiters {
             pub fn span(&self) -> Span {
                 self.group.span()
             }
+            pub fn inner(self) -> T {
+                self.content
+            }
+            pub fn inner_ref(&self) -> &T {
+                &self.content
+            }
             pub fn map<R, F: FnOnce(T) -> R>(self, f: F) -> $name<R> {
                 $name::<R>::new(self.group, f(self.content))
             }

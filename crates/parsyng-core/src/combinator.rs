@@ -1,3 +1,4 @@
+use std::slice::Iter;
 use std::{marker::PhantomData, vec::IntoIter};
 
 use crate::ToTokens;
@@ -111,6 +112,23 @@ impl<T, P> Iterator for PunctuatedIntoIter<T, P> {
     }
 }
 
+#[derive(Clone, Default, Debug)]
+pub struct PunctuatedIter<'a, T, P> {
+    content: Iter<'a, (T, P)>,
+    last: Option<&'a T>,
+}
+
+impl<'a, T, P> Iterator for PunctuatedIter<'a, T, P> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.content.next() {
+            Some(v) => Some(&v.0),
+            None => self.last,
+        }
+    }
+}
+
 impl<T, P, OnError> Punctuated<T, P, OnError> {
     pub const fn is_empty(&self) -> bool {
         self.content.is_empty() && self.last.is_none()
@@ -137,6 +155,13 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
             content: Vec::new(),
             last: Some(elem),
             _phantom: PhantomData,
+        }
+    }
+
+    pub fn iter(&self) -> PunctuatedIter<'_, T, P> {
+        PunctuatedIter {
+            content: self.content.iter(),
+            last: self.last.as_ref(),
         }
     }
 }

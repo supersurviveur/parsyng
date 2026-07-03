@@ -5,6 +5,8 @@ use proc_macro::TokenStream;
 
 mod derive_parse;
 mod derive_to_tokens;
+mod proc_macro_attribute_helper;
+mod proc_macro_derive_helper;
 mod proc_macro_helper;
 
 pub(crate) fn dbg_macros() -> TokenStream {
@@ -14,14 +16,28 @@ pub(crate) fn dbg_macros() -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
-    match proc_macro_helper::proc_macro(_args, input) {
+pub fn proc_macro(args: TokenStream, input: TokenStream) -> TokenStream {
+    match proc_macro_helper::proc_macro(args, input) {
         Ok(ok) => ok,
-        Err(err) => {
-            let mut tokens = TokenStream::new();
-            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
-            tokens
-        }
+        Err(err) => parsyng_core::ToTokens::to_token_stream(&err),
+    }
+}
+
+// Export with an underscore, since it will conflicts with the `proc_macro_attribute` builtin.
+#[proc_macro_attribute]
+pub fn proc_macro_attribute_(args: TokenStream, input: TokenStream) -> TokenStream {
+    match proc_macro_attribute_helper::proc_macro_attribute(args, input) {
+        Ok(ok) => ok,
+        Err(err) => parsyng_core::ToTokens::to_token_stream(&err),
+    }
+}
+
+// Export with an underscore, since it will conflicts with the `proc_macro_derive` builtin.
+#[proc_macro_attribute]
+pub fn proc_macro_derive_(args: TokenStream, input: TokenStream) -> TokenStream {
+    match proc_macro_derive_helper::proc_macro_derive(args, input) {
+        Ok(ok) => ok,
+        Err(err) => parsyng_core::ToTokens::to_token_stream(&err),
     }
 }
 
@@ -29,11 +45,7 @@ pub fn proc_macro(_args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn derive_parse(input: TokenStream) -> TokenStream {
     match derive_parse::derive_parse(input) {
         Ok(ok) => ok,
-        Err(err) => {
-            let mut tokens = TokenStream::new();
-            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
-            tokens
-        }
+        Err(err) => parsyng_core::ToTokens::to_token_stream(&err),
     }
 }
 
@@ -41,10 +53,6 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
 pub fn derive_to_tokens(input: TokenStream) -> TokenStream {
     match derive_to_tokens::derive_to_tokens(input) {
         Ok(ok) => ok,
-        Err(err) => {
-            let mut tokens = TokenStream::new();
-            parsyng_core::ToTokens::to_tokens(&err, &mut tokens);
-            tokens
-        }
+        Err(err) => parsyng_core::ToTokens::to_token_stream(&err),
     }
 }

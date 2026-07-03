@@ -26,6 +26,17 @@ pub struct PatIdent {
     ident: Ident,
 }
 
+impl Pattern {
+    pub fn ident(&self) -> Option<&Ident> {
+        match self {
+            Pattern::Ident(pat_ident) => Some(&pat_ident.ident),
+            Pattern::Wildcard(pat_wildcard) => Some(&pat_wildcard.underscore),
+            Pattern::Tuple(_) => None,
+            Pattern::Ref(pat_ref) => pat_ref.pat.ident(),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PatWildcard {
     underscore: Ident,
