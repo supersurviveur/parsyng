@@ -2,6 +2,7 @@ pub mod attributes;
 pub mod crate_source;
 pub mod delimiter;
 pub mod expression;
+pub mod generics;
 pub mod identifiers;
 pub mod item;
 pub mod literal;

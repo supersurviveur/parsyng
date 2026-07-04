@@ -1,6 +1,7 @@
 use crate::ToTokens;
 
 use crate::ast::attributes::Attribute;
+use crate::ast::generics::{ImplGenerics, TypeGenerics};
 use crate::{
     ast::{
         attributes::parse_outer_attributes,
@@ -12,71 +13,46 @@ use crate::{
     },
     combinator::Punctuated,
     parse::Parse,
-    proc_macro::{Delimiter, Ident},
+    proc_macro::{Delimiter, Ident, Span},
 };
 
 #[derive(Clone, Debug)]
-pub enum Struct {
-    StructStruct(StructStruct),
-}
-
-#[derive(Clone, Debug)]
-pub struct StructStruct {
+pub struct Struct {
     struct_token: StructKeyword,
     struct_ident: Ident,
-    generic_parameters: Option<GenericParams>,
+    pub generic_parameters: Option<GenericParams>,
     where_clause: Option<WhereClause>,
-    fields: StructFields,
+    pub fields: StructFields,
     semicolon: Option<Semicolon>,
 }
 
 impl Struct {
     pub fn ident(&self) -> &Ident {
-        match self {
-            Struct::StructStruct(struct_struct) => struct_struct.ident(),
-        }
-    }
-    pub fn generic_parameters(&self) -> &Option<GenericParams> {
-        match self {
-            Struct::StructStruct(struct_struct) => struct_struct.generic_parameters(),
-        }
-    }
-    pub fn fields(&self) -> Option<&Punctuated<StructField, Comma>> {
-        match self {
-            Struct::StructStruct(struct_struct) => struct_struct.fields(),
-        }
-    }
-}
-
-impl StructStruct {
-    pub fn ident(&self) -> &Ident {
         &self.struct_ident
     }
-    pub fn generic_parameters(&self) -> &Option<GenericParams> {
-        &self.generic_parameters
+    pub fn generic_parameters(&self) -> Option<&GenericParams> {
+        self.generic_parameters.as_ref()
     }
-    pub fn fields(&self) -> Option<&Punctuated<StructField, Comma>> {
-        match &self.fields {
-            StructFields::Named(fields) => Some(fields),
-            _ => None,
-        }
+    pub fn generic_parameters_mut(&mut self) -> Option<&mut GenericParams> {
+        self.generic_parameters.as_mut()
+    }
+    pub fn split_generics_for_impl(
+        &self,
+    ) -> (
+        Option<ImplGenerics<'_>>,
+        Option<TypeGenerics<'_>>,
+        Option<&WhereClause>,
+    ) {
+        (
+            self.generic_parameters().map(Into::into),
+            self.generic_parameters().map(Into::into),
+            self.where_clause.as_ref(),
+        )
     }
 }
+
 
 impl Parse for Struct {
-    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
-        Ok(Self::StructStruct(input.parse()?))
-    }
-}
-impl ToTokens for Struct {
-    fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
-        match self {
-            Struct::StructStruct(struct_struct) => struct_struct.to_tokens(tokens),
-        }
-    }
-}
-
-impl Parse for StructStruct {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let struct_token = input.parse()?;
         let struct_ident = input.parse()?;
@@ -105,7 +81,7 @@ impl Parse for StructStruct {
     }
 }
 
-impl ToTokens for StructStruct {
+impl ToTokens for Struct {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.struct_token.to_tokens(tokens);
         self.struct_ident.to_tokens(tokens);
@@ -120,7 +96,7 @@ impl ToTokens for StructStruct {
 pub struct StructField {
     attributes: Vec<Attribute>,
     visibility: Visibility,
-    field_ident: Ident,
+    pub ident: Ident,
     colon_token: Colon,
     ty: Type,
 }
@@ -139,8 +115,17 @@ pub struct TupleField {
 }
 
 impl StructField {
+    pub fn span(&self) -> Span {
+        self.ident.span()
+    }
     pub fn ident(&self) -> &Ident {
-        &self.field_ident
+        &self.ident
+    }
+}
+
+impl TupleField {
+    pub fn span(&self) -> Span {
+        self.ty.span()
     }
 }
 
@@ -150,7 +135,7 @@ impl Parse for StructField {
         Ok(Self {
             attributes,
             visibility: input.parse()?,
-            field_ident: input.parse()?,
+            ident: input.parse()?,
             colon_token: input.parse()?,
             ty: input.parse()?,
         })
@@ -170,7 +155,7 @@ impl ToTokens for StructField {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.attributes.to_tokens(tokens);
         self.visibility.to_tokens(tokens);
-        self.field_ident.to_tokens(tokens);
+        self.ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
         self.ty.to_tokens(tokens);
     }

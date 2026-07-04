@@ -1,4 +1,4 @@
-use std::slice::Iter;
+use std::slice::{Iter, IterMut};
 use std::{marker::PhantomData, vec::IntoIter};
 
 use crate::ToTokens;
@@ -118,13 +118,30 @@ pub struct PunctuatedIter<'a, T, P> {
     last: Option<&'a T>,
 }
 
+#[derive(Default, Debug)]
+pub struct PunctuatedIterMut<'a, T, P> {
+    content: IterMut<'a, (T, P)>,
+    last: Option<&'a mut T>,
+}
+
 impl<'a, T, P> Iterator for PunctuatedIter<'a, T, P> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.content.next() {
             Some(v) => Some(&v.0),
-            None => self.last,
+            None => self.last.take(),
+        }
+    }
+}
+
+impl<'a, T, P> Iterator for PunctuatedIterMut<'a, T, P> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.content.next() {
+            Some(v) => Some(&mut v.0),
+            None => self.last.take(),
         }
     }
 }
@@ -136,6 +153,9 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
     pub const fn len(&self) -> usize {
         self.content.len() + if self.last.is_some() { 1 } else { 0 }
     }
+    pub fn push(&mut self, pair: (T, P)) {
+        self.content.push(pair);
+    }
     pub fn push_back(&mut self, pair: (T, P)) {
         self.content.insert(0, pair);
     }
@@ -143,7 +163,7 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
     pub const fn trailing(&self) -> &Option<T> {
         &self.last
     }
-    pub const fn empty() -> Self {
+    pub const fn new() -> Self {
         Self {
             content: Vec::new(),
             last: None,
@@ -158,10 +178,21 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
         }
     }
 
+    pub fn iter_pairs(&self) -> Iter<'_, (T, P)> {
+        self.content.iter()
+    }
+
     pub fn iter(&self) -> PunctuatedIter<'_, T, P> {
         PunctuatedIter {
             content: self.content.iter(),
             last: self.last.as_ref(),
+        }
+    }
+
+    pub fn iter_mut(&mut self) -> PunctuatedIterMut<'_, T, P> {
+        PunctuatedIterMut {
+            content: self.content.iter_mut(),
+            last: self.last.as_mut(),
         }
     }
 }

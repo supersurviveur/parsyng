@@ -25,6 +25,7 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> error::Result<TokenS
     assert!(params.len() == 1);
     let param = params.iter().next().unwrap();
     let input_ident = param.ident();
+    let input_mut = param.mutability();
     let in_type = param.ty();
     let out_type = signature.return_type().to_token_stream();
 
@@ -70,6 +71,6 @@ pub fn proc_macro(args: TokenStream, input: TokenStream) -> error::Result<TokenS
     Ok(quote! {
         #new_function
 
-        fn #new_macro_ident(#input_ident: #in_type) -> #out_type #stream
+        fn #new_macro_ident(#input_mut #input_ident: #in_type) -> #out_type #stream
     })
 }

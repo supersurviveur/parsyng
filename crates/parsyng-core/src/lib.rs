@@ -28,7 +28,7 @@ pub use parsyng_quote_macros::{quote, quote_spanned};
 #[macro_export]
 macro_rules! parse_quote {
     ($($t:tt)*) => {{
-        let stream = $crate::parse::ParseBuffer::new($crate::quote! { $($t)* });
+        let mut stream = $crate::parse::ParseBuffer::new($crate::quote! { $($t)* });
         stream.parse().unwrap()
     }};
 }

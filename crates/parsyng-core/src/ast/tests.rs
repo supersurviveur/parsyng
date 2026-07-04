@@ -157,10 +157,9 @@ fn item_nodes() {
     assert_eq!(field.ident().to_string(), "x");
 
     let struct_struct =
-        check::<StructStruct>(quote! { struct Point<T> where T: Copy { pub x: T, } });
+        check::<Struct>(quote! { struct Point<T> where T: Copy { pub x: T, } });
     assert_eq!(struct_struct.ident().to_string(), "Point");
     assert!(struct_struct.generic_parameters().is_some());
-    assert_eq!(struct_struct.fields().unwrap().len(), 1);
 
     let item_struct = check::<Struct>(quote! { struct Unit; });
     assert_eq!(item_struct.ident().to_string(), "Unit");

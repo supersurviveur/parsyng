@@ -5,7 +5,7 @@ use crate::ToTokens;
 use crate::{
     error::{Diagnostics, Result},
     parse::{Parse, ParseBuffer, Peek},
-    proc_macro::{Ident, Punct, Span},
+    proc_macro::{Ident, Punct, Spacing, Span},
 };
 
 fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
@@ -214,6 +214,11 @@ pub struct RustPunct2<const A: char, const B: char>([Punct; 2]);
 pub struct RustPunct3<const A: char, const B: char, const C: char>([Punct; 3]);
 
 impl<const A: char> RustPunct1<A> {
+    pub fn new(span: Span) -> Self {
+        let mut punct = Punct::new(A, Spacing::Alone);
+        punct.set_span(span);
+        Self([punct])
+    }
     pub fn span(&self) -> Span {
         self.0[0].span()
     }
@@ -223,12 +228,28 @@ impl<const A: char> RustPunct1<A> {
 }
 
 impl<const A: char, const B: char> RustPunct2<A, B> {
+    pub fn new(span: Span) -> Self {
+        let mut punct1 = Punct::new(A, Spacing::Joint);
+        let mut punct2 = Punct::new(B, Spacing::Alone);
+        punct1.set_span(span);
+        punct2.set_span(span);
+        Self([punct1, punct2])
+    }
     pub fn spans(&self) -> [Span; 2] {
         self.0.clone().map(|punct| punct.span())
     }
 }
 
 impl<const A: char, const B: char, const C: char> RustPunct3<A, B, C> {
+    pub fn new(span: Span) -> Self {
+        let mut punct1 = Punct::new(A, Spacing::Joint);
+        let mut punct2 = Punct::new(B, Spacing::Joint);
+        let mut punct3 = Punct::new(C, Spacing::Alone);
+        punct1.set_span(span);
+        punct2.set_span(span);
+        punct3.set_span(span);
+        Self([punct1, punct2, punct3])
+    }
     pub fn spans(&self) -> [Span; 3] {
         self.0.clone().map(|punct| punct.span())
     }

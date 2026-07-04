@@ -12,7 +12,7 @@ use crate::{
     combinator::{Punctuated, StopOnError},
     error::Diagnostics,
     parse::{Parse, Peekable},
-    proc_macro::Ident,
+    proc_macro::{Ident, Span},
 };
 
 #[derive(Clone, Debug)]
@@ -44,6 +44,12 @@ impl ToTokens for SimplePath {
 pub struct TypePathSegment {
     path_ident: Ident,
     args: Option<(Option<PathSep>, Either<GenericArgs, TypePathFn>)>,
+}
+
+impl TypePathSegment {
+    pub fn span(&self) -> Span {
+        self.path_ident.span()
+    }
 }
 
 #[derive(Clone, Debug)]

@@ -67,6 +67,13 @@ impl FnParam {
             FnParam::Variadic(_) => None,
         }
     }
+    pub fn mutability(&self) -> Option<&Mut> {
+        match self {
+            FnParam::SelfParam(_) => todo!(),
+            FnParam::Typed(pat_type) => pat_type.pat.mutability(),
+            FnParam::Variadic(_) => None,
+        }
+    }
 }
 
 impl FnSignature {

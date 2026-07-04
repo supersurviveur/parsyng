@@ -1,8 +1,11 @@
 use core::ops::Deref;
+use std::ops::DerefMut;
 
 use crate::{
     ToTokens,
-    proc_macro::{Delimiter, TokenStream},
+    ast::generics::{ImplGenerics, TypeGenerics},
+    combinator::{PunctuatedIter, PunctuatedIterMut},
+    proc_macro::{Delimiter, Span, TokenStream},
 };
 
 use crate::{
@@ -70,7 +73,7 @@ pub enum Item {
 #[derive(Clone, Debug)]
 pub struct ConstParam {
     const_token: Const,
-    ident: Ident,
+    pub ident: Ident,
     colon: Colon,
     ty: Type,
     default: Option<(Eq, Type)>,
@@ -81,6 +84,48 @@ pub struct VisItem<T> {
     attributes: Vec<Attribute>,
     visibility: Visibility,
     item: T,
+}
+
+#[derive(Clone, Debug)]
+pub enum DeriveInput {
+    Struct(Box<ItemStruct>),
+    Enum(Box<ItemEnum>),
+}
+
+impl DeriveInput {
+    pub fn generics_parameters(&self) -> Option<&GenericParams> {
+        match self {
+            DeriveInput::Struct(vis_item) => vis_item.generic_parameters(),
+            DeriveInput::Enum(_vis_item) => todo!(),
+        }
+    }
+    pub fn generics_parameters_mut(&mut self) -> Option<&mut GenericParams> {
+        match self {
+            DeriveInput::Struct(vis_item) => vis_item.generic_parameters_mut(),
+            DeriveInput::Enum(_vis_item) => todo!(),
+        }
+    }
+    pub fn split_generics_for_impl(
+        &self,
+    ) -> (
+        Option<ImplGenerics<'_>>,
+        Option<TypeGenerics<'_>>,
+        Option<&WhereClause>,
+    ) {
+        match self {
+            DeriveInput::Struct(vis_item) => vis_item.split_generics_for_impl(),
+            DeriveInput::Enum(_vis_item) => todo!(),
+        }
+    }
+}
+
+impl DeriveInput {
+    pub fn ident(&self) -> &Ident {
+        match self {
+            DeriveInput::Struct(vis_item) => vis_item.ident(),
+            DeriveInput::Enum(vis_item) => vis_item.ident(),
+        }
+    }
 }
 
 impl Parse for ConstParam {
@@ -102,6 +147,12 @@ impl<T> Deref for VisItem<T> {
         &self.item
     }
 }
+impl<T> DerefMut for VisItem<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.item
+    }
+}
+
 impl ToTokens for ConstParam {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.const_token.to_tokens(tokens);
@@ -233,6 +284,30 @@ impl Parse for Item {
         }
     }
 }
+impl Parse for DeriveInput {
+    fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
+        let attributes = parse_outer_attributes(input);
+        let visibility = input.parse()?;
+        if let Ok(r#struct) = input.try_parse() {
+            Ok(Self::Struct(Box::new(VisItem {
+                attributes,
+                visibility,
+                item: r#struct,
+            })))
+        } else if let Ok(enum_item) = input.try_parse() {
+            Ok(Self::Enum(Box::new(VisItem {
+                attributes,
+                visibility,
+                item: enum_item,
+            })))
+        } else {
+            Err(Diagnostics::new_error_spanned(
+                "Expected an derive input",
+                input.span(),
+            ))
+        }
+    }
+}
 impl ToTokens for Item {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
@@ -251,6 +326,14 @@ impl ToTokens for Item {
             Item::Macro(vis_item) => vis_item.to_tokens(tokens),
             Item::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
             Item::Impl(implementation) => implementation.to_tokens(tokens),
+        }
+    }
+}
+impl ToTokens for DeriveInput {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Self::Struct(vis_item) => vis_item.to_tokens(tokens),
+            Self::Enum(vis_item) => vis_item.to_tokens(tokens),
         }
     }
 }
@@ -301,9 +384,18 @@ pub struct TypeBoundWhereClauseItem {
 
 #[derive(Clone, Debug)]
 pub struct GenericParams {
-    start_token: Lt,
-    generics: Punctuated<GenericParam, Comma, StopOnError>,
-    last_token: Gt,
+    pub start_token: Lt,
+    pub generics: Punctuated<GenericParam, Comma, StopOnError>,
+    pub last_token: Gt,
+}
+
+impl GenericParams {
+    pub fn iter(&self) -> PunctuatedIter<'_, GenericParam, Comma> {
+        self.generics.iter()
+    }
+    pub fn iter_mut(&mut self) -> PunctuatedIterMut<'_, GenericParam, Comma> {
+        self.generics.iter_mut()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -315,8 +407,9 @@ pub enum GenericParam {
 
 #[derive(Clone, Debug)]
 pub struct TypeParam {
-    ident: Ident,
-    bounds: Option<(Colon, TypeParamBounds)>,
+    pub ident: Ident,
+    colon: Option<Colon>,
+    pub bounds: TypeParamBounds,
     default: Option<(Eq, Type)>,
 }
 
@@ -325,10 +418,37 @@ pub struct TypeParamBounds {
     bounds: Punctuated<TypeParamBound, Plus, StopOnError>,
 }
 
+impl Default for TypeParamBounds {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TypeParamBounds {
+    pub fn new() -> Self {
+        Self {
+            bounds: Punctuated::new(),
+        }
+    }
+    pub fn push(&mut self, bound: TypeParamBound) {
+        let separator = Plus::new(bound.span());
+        self.bounds.push((bound, separator));
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum TypeParamBound {
     Trait(Box<TraitBound>),
     Lifetime(Lifetime),
+}
+
+impl TypeParamBound {
+    pub fn span(&self) -> Span {
+        match self {
+            TypeParamBound::Trait(trait_bound) => trait_bound.span(),
+            TypeParamBound::Lifetime(lifetime) => lifetime.span(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -345,10 +465,22 @@ pub struct TraitBound {
     path: TypePath,
 }
 
+impl TraitBound {
+    pub fn span(&self) -> Span {
+        self.path.span()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Lifetime {
     quote: Quote,
     ident: Ident,
+}
+
+impl Lifetime {
+    pub fn span(&self) -> Span {
+        self.quote.span()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -457,10 +589,10 @@ impl Parse for TypeParam {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let ident = input.parse()?;
 
-        let bounds = if let Ok(colon) = input.peek_parse() {
-            Some((colon, input.parse()?))
+        let (colon, bounds) = if let Ok(colon) = input.peek_parse() {
+            (Some(colon), input.parse()?)
         } else {
-            None
+            (None, TypeParamBounds::new())
         };
 
         let default = if let Ok(eq) = input.peek_parse() {
@@ -471,6 +603,7 @@ impl Parse for TypeParam {
 
         Ok(Self {
             ident,
+            colon,
             bounds,
             default,
         })
@@ -573,6 +706,7 @@ impl ToTokens for TraitBound {
 impl ToTokens for TypeParam {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.ident.to_tokens(tokens);
+        self.colon.to_tokens(tokens);
         self.bounds.to_tokens(tokens);
         self.default.to_tokens(tokens);
     }

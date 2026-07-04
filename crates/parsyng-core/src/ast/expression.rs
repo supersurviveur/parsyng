@@ -638,7 +638,7 @@ impl ToTokens for ArrayExpression {
 impl Parse for ArrayElements {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         if input.is_empty() {
-            return Ok(Self::List(Punctuated::empty()));
+            return Ok(Self::List(Punctuated::new()));
         }
         let first = input.parse()?;
         if let Ok(semicolon) = input.peek_parse() {

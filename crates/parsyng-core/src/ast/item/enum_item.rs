@@ -46,6 +46,12 @@ pub struct EnumField {
     ty: Type,
 }
 
+impl EnumItem {
+    pub fn ident(&self) -> &Ident {
+        &self.ident
+    }
+}
+
 impl Parse for EnumItem {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         Ok(Self {

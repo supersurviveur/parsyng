@@ -1,4 +1,5 @@
 use parsyng_core as parsyng;
+use parsyng_core::ast::item::r#struct::StructFields;
 
 use parsyng_core::quote;
 use parsyng_core::{ast::item::ItemStruct, error, parse};
@@ -10,12 +11,17 @@ pub fn derive_parse(input: TokenStream) -> error::Result<TokenStream> {
     let struct_item = stream.parse::<ItemStruct>()?;
 
     let mut fields = vec![];
-    if let Some(struct_fields) = struct_item.fields() {
-        for field in struct_fields.clone() {
-            fields.push(quote! {
-                #{ field.ident() }: input.parse()?,
-            });
+
+    match &struct_item.fields {
+        StructFields::Named(struct_fields) => {
+            for field in struct_fields.iter() {
+                fields.push(quote! {
+                    #{ field.ident() }: input.parse()?,
+                });
+            }
         }
+        StructFields::Unnamed(_) => todo!(),
+        StructFields::Unit => todo!(),
     }
 
     Ok(quote! {

@@ -14,7 +14,7 @@ use crate::{
     combinator::Punctuated,
     error::Diagnostics,
     parse::{Parse, ParseBuffer},
-    proc_macro::{Delimiter, Literal, TokenStream},
+    proc_macro::{Delimiter, Literal, Span, TokenStream},
 };
 
 #[derive(Clone, Debug)]
@@ -34,11 +34,26 @@ pub enum Type {
     MacroInvocation(MacroInvocationItem),
 }
 
+impl Type {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::Never(not) => not.span(),
+            _ => todo!(),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TypePath {
     start_token: Option<PathSep>,
     root: TypePathSegment,
     paths: Vec<(PathSep, TypePathSegment)>,
+}
+
+impl TypePath {
+    pub fn span(&self) -> Span {
+        self.root.span()
+    }
 }
 
 #[derive(Clone, Debug)]

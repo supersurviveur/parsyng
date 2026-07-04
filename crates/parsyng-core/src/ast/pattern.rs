@@ -35,6 +35,14 @@ impl Pattern {
             Pattern::Ref(pat_ref) => pat_ref.pat.ident(),
         }
     }
+    pub fn mutability(&self) -> Option<&Mut> {
+        match self {
+            Pattern::Ident(pat_ident) => pat_ident.mutability.as_ref(),
+            Pattern::Wildcard(_) => None,
+            Pattern::Tuple(_) => None,
+            Pattern::Ref(pat_ref) => pat_ref.pat.mutability(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

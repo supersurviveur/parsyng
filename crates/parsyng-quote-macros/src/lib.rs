@@ -4,7 +4,17 @@ const INTERPOLATION_CHAR: char = '#';
 
 #[proc_macro]
 pub fn quote(input: TokenStream) -> TokenStream {
-    parse_tokenstream(input, false)
+    parse_tokenstream(input, false, &mut None, &mut Vec::new())
+}
+
+fn make_compile_error(span: Span, inner: TokenStream) -> TokenStream {
+    let mut error = TokenStream::new();
+    error.extend::<[TokenTree; _]>([
+        Ident::new("compile_error", span).into(),
+        Punct::new('!', Spacing::Alone).into(),
+        Group::new(proc_macro::Delimiter::Brace, inner).into(),
+    ]);
+    error
 }
 
 #[proc_macro]
@@ -25,25 +35,14 @@ pub fn quote_spanned(input: TokenStream) -> TokenStream {
         Some(TokenTree::Punct(ref punct)) => punct.as_char() != '>',
         _ => false,
     } {
-        let mut error = TokenStream::new();
-        error.extend::<[TokenTree; _]>([
-            Ident::new(
-                "compile_error",
-                tt.clone().map_or(Span::call_site(), |tt| tt.span()),
-            )
-            .into(),
-            Punct::new('!', Spacing::Alone).into(),
-            Group::new(proc_macro::Delimiter::Brace, {
-                let mut tk = TokenStream::new();
-                tk.extend([Literal::string(&format!(
-                    "expected '>', found '{}'",
-                    tt.map_or("<eof>".to_string(), |tt| tt.to_string())
-                ))]);
-                tk
-            })
-            .into(),
-        ]);
-        return error;
+        return make_compile_error(tt.clone().map_or(Span::call_site(), |tt| tt.span()), {
+            let mut tk = TokenStream::new();
+            tk.extend([Literal::string(&format!(
+                "expected '>', found '{}'",
+                tt.map_or("<eof>".to_string(), |tt| tt.to_string())
+            ))]);
+            tk
+        });
     }
 
     let mut output = TokenStream::new();
@@ -52,18 +51,33 @@ pub fn quote_spanned(input: TokenStream) -> TokenStream {
     output.extend(span);
     output.extend::<[TokenTree; _]>([TokenTree::Punct(Punct::new(';', Spacing::Alone))]);
 
-    output.extend(parse_tokenstream(stream.collect(), true));
+    output.extend(parse_tokenstream(
+        stream.collect(),
+        true,
+        &mut None,
+        &mut Vec::new(),
+    ));
 
     let mut result = TokenStream::new();
     result.extend([Group::new(proc_macro::Delimiter::Brace, output)]);
     result
 }
 
-fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
+fn parse_tokenstream(
+    stream: TokenStream,
+    span: bool,
+    in_repetition: &mut Option<TokenStream>,
+    repetition_ident_already_used: &mut Vec<String>,
+) -> TokenStream {
     let mut output: TokenStream = TokenStream::new();
 
-    output
-        .extend("let mut tokens = parsyng::proc_macro::TokenStream::new();".parse::<TokenStream>());
+    let in_repetition_bool = in_repetition.is_some();
+
+    if !in_repetition_bool {
+        output.extend(
+            "let mut tokens = parsyng::proc_macro::TokenStream::new();".parse::<TokenStream>(),
+        );
+    }
 
     let mut iter = stream.into_iter().peekable();
 
@@ -73,7 +87,55 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
                 if punct.as_char() == INTERPOLATION_CHAR
                     && let Some(TokenTree::Ident(_)) = iter.peek() =>
             {
-                iter.next()
+                let ident = iter.next().unwrap();
+                match in_repetition {
+                    None => Some(ident),
+                    Some(loop_prologue) => {
+                        if !repetition_ident_already_used.contains(&ident.to_string()) {
+                            repetition_ident_already_used.push(ident.to_string());
+
+                            let mut match_next: TokenStream = TokenStream::new();
+                            let mut match_body: TokenStream = TokenStream::new();
+
+                            // Make `Some({ident}) => {ident}, None => break`
+                            match_body.extend::<[TokenTree; _]>([
+                                Ident::new("Some", Span::call_site()).into(),
+                                Group::new(
+                                    proc_macro::Delimiter::Parenthesis,
+                                    TokenStream::from(ident.clone()),
+                                )
+                                .into(),
+                                Punct::new('=', Spacing::Joint).into(),
+                                Punct::new('>', Spacing::Alone).into(),
+                                ident.clone(),
+                                Punct::new(',', Spacing::Alone).into(),
+                                Ident::new("None", Span::call_site()).into(),
+                                Punct::new('=', Spacing::Joint).into(),
+                                Punct::new('>', Spacing::Alone).into(),
+                                Ident::new("break", Span::call_site()).into(),
+                            ]);
+
+                            // Make `let #ident = match {ident}.next() { {match_body} };`
+                            match_next.extend::<[TokenTree; _]>([
+                                Ident::new("let", Span::call_site()).into(),
+                                ident.clone(),
+                                Punct::new('=', Spacing::Alone).into(),
+                                Ident::new("match", Span::call_site()).into(),
+                                ident.clone(),
+                                Punct::new('.', Spacing::Alone).into(),
+                                Ident::new("next", Span::call_site()).into(),
+                                Group::new(proc_macro::Delimiter::Parenthesis, TokenStream::new())
+                                    .into(),
+                                Group::new(proc_macro::Delimiter::Brace, match_body).into(),
+                                Punct::new(';', Spacing::Alone).into(),
+                            ]);
+
+                            loop_prologue.extend(match_next);
+                        }
+
+                        Some(ident)
+                    }
+                }
             }
             TokenTree::Punct(ref punct)
                 if punct.as_char() == INTERPOLATION_CHAR
@@ -88,6 +150,81 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
                     proc_macro::Delimiter::None,
                     g.stream(),
                 )))
+            }
+            TokenTree::Punct(ref punct)
+                if punct.as_char() == INTERPOLATION_CHAR
+                    && let Some(TokenTree::Group(g)) = iter.peek()
+                    && g.delimiter() == proc_macro::Delimiter::Parenthesis =>
+            {
+                if in_repetition_bool {
+                    return make_compile_error(g.span(), {
+                        let mut tk = TokenStream::new();
+                        tk.extend([Literal::string(
+                            "Quote repetition inside another repetition is forbidden",
+                        )]);
+                        tk
+                    });
+                }
+                let g = match iter.next().unwrap() {
+                    TokenTree::Group(group) => group,
+                    _ => unreachable!(),
+                };
+
+                let mut first_loop = TokenStream::new();
+
+                // Append tokens after #(...) to the first_loop until the first *
+                while let Some(tt) = match iter.next() {
+                    Some(TokenTree::Punct(punct)) => {
+                        if punct.as_char() == '*' {
+                            None
+                        } else {
+                            Some(TokenTree::Punct(punct))
+                        }
+                    }
+                    tt => tt,
+                } {
+                    token_to_construction_code(
+                        &mut first_loop,
+                        tt,
+                        span,
+                        in_repetition,
+                        repetition_ident_already_used,
+                    );
+                }
+
+                let mut loop_prologue = Some(TokenStream::new());
+
+                let body = parse_tokenstream(g.stream(), span, &mut loop_prologue, &mut Vec::new());
+
+                let mut loop_body = loop_prologue.unwrap();
+
+                // Make `if __quote_first {  } __quote_first = false;`
+                loop_body.extend::<[TokenTree; _]>([
+                    Ident::new("if", Span::call_site()).into(),
+                    Punct::new('!', Spacing::Alone).into(),
+                    Ident::new("__quote_first", Span::call_site()).into(),
+                    Group::new(proc_macro::Delimiter::Brace, first_loop).into(),
+                    Ident::new("__quote_first", Span::call_site()).into(),
+                    Punct::new('=', Spacing::Alone).into(),
+                    Ident::new("false", Span::call_site()).into(),
+                    Punct::new(';', Spacing::Alone).into(),
+                ]);
+
+                loop_body.extend(body);
+
+                // Make `let __quote_first = true; loop { {body} }`
+                output.extend::<[TokenTree; _]>([
+                    Ident::new("let", Span::call_site()).into(),
+                    Ident::new("mut", Span::call_site()).into(),
+                    Ident::new("__quote_first", Span::call_site()).into(),
+                    Punct::new('=', Spacing::Alone).into(),
+                    Ident::new("true", Span::call_site()).into(),
+                    Punct::new(';', Spacing::Alone).into(),
+                    Ident::new("loop", Span::call_site()).into(),
+                    Group::new(proc_macro::Delimiter::Brace, loop_body).into(),
+                ]);
+
+                continue;
             }
             _ => None,
         } {
@@ -116,21 +253,40 @@ fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
                 Punct::new(';', Spacing::Alone).into(),
             ]);
         } else {
-            token_to_construction_code(&mut output, tt, span);
+            token_to_construction_code(
+                &mut output,
+                tt,
+                span,
+                in_repetition,
+                repetition_ident_already_used,
+            );
         }
     }
 
-    output.extend(core::iter::once(Ident::new("tokens", Span::call_site())));
+    if !in_repetition_bool {
+        output.extend(core::iter::once(Ident::new("tokens", Span::call_site())));
+    }
 
     TokenTree::Group(Group::new(proc_macro::Delimiter::Brace, output)).into()
 }
 
-fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: bool) {
+fn token_to_construction_code(
+    output: &mut TokenStream,
+    tt: TokenTree,
+    spanned: bool,
+    in_repetition: &mut Option<TokenStream>,
+    repetition_ident_already_used: &mut Vec<String>,
+) {
     let spanned_fn = if spanned { "_spanned" } else { "" };
     let spanned_arg = if spanned { "span.clone(), " } else { "" };
     match tt {
         TokenTree::Group(group) => {
-            let inner = parse_tokenstream(group.stream(), spanned);
+            let inner = parse_tokenstream(
+                group.stream(),
+                spanned,
+                in_repetition,
+                repetition_ident_already_used,
+            );
 
             let f = format!("parsyng::quote::__private::push_group{}", spanned_fn)
                 .parse::<TokenStream>();

@@ -27,10 +27,12 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
 
     let attr_param = params.next().unwrap();
     let attr_ident = attr_param.ident();
+    let attr_mut = attr_param.mutability();
     let attr_type = attr_param.ty();
 
     let item_param = params.next().unwrap();
     let input_item_ident = item_param.ident();
+    let input_item_mut = item_param.mutability();
     let item_type = item_param.ty();
 
     let out_type = signature.return_type().to_token_stream();
@@ -86,6 +88,6 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
     Ok(quote! {
         #new_function
 
-        fn #new_macro_ident(#attr_ident: #attr_type, #input_item_ident: #item_type) -> #out_type #stream
+        fn #new_macro_ident(#attr_mut #attr_ident: #attr_type, #input_item_mut #input_item_ident: #item_type) -> #out_type #stream
     })
 }

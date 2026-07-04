@@ -28,6 +28,7 @@ pub fn proc_macro_derive(args: TokenStream, input: TokenStream) -> error::Result
 
     let item_param = params.next().unwrap();
     let input_item_ident = item_param.ident();
+    let input_item_mut = item_param.mutability();
     let item_type = item_param.ty();
 
     let out_type = signature.return_type().to_token_stream();
@@ -77,6 +78,6 @@ pub fn proc_macro_derive(args: TokenStream, input: TokenStream) -> error::Result
     Ok(quote! {
         #new_function
 
-        fn #new_macro_ident(#input_item_ident: #item_type) -> #out_type #stream
+        fn #new_macro_ident(#input_item_mut #input_item_ident: #item_type) -> #out_type #stream
     })
 }

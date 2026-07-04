@@ -10,7 +10,7 @@ members = [
   "benches/bench-quote-comptime",
 
   "examples/simple-use",
-  "examples/simple-use-macros",
+  "examples/simple-use-macros", "examples/heapsize/heapsize", "examples/heapsize/heapsize-macros", "examples/heapsize/example",
 ]
 
 [package]
@@ -35,3 +35,4 @@ debug-pretty = ["parsyng-core/debug-pretty"]
 
 [[bench]]
 name = "parsyng-quote"
+required-features = ["proc-macro2"]
