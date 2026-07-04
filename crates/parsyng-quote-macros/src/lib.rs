@@ -131,16 +131,23 @@ fn token_to_construction_code(output: &mut TokenStream, tt: TokenTree, spanned: 
     match tt {
         TokenTree::Group(group) => {
             let inner = parse_tokenstream(group.stream(), spanned);
-            output.extend(
-                format!(
-                    "parsyng::quote::__private::push_group{}(parsyng::proc_macro::Delimiter::{:?}, {}, {}&mut tokens);",
-                    spanned_fn,
-                    group.delimiter(),
-                    inner,
-                    spanned_arg,
-                )
-                .parse::<TokenStream>(),
-            );
+
+            let f = format!("parsyng::quote::__private::push_group{}", spanned_fn)
+                .parse::<TokenStream>();
+
+            let mut args = format!("parsyng::proc_macro::Delimiter::{:?}, ", group.delimiter())
+                .parse::<TokenStream>()
+                .unwrap();
+
+            args.extend(inner);
+
+            args.extend(format!(", {}&mut tokens", spanned_arg).parse::<TokenStream>());
+
+            let args = TokenTree::Group(Group::new(proc_macro::Delimiter::Parenthesis, args));
+
+            output.extend(f);
+            output.extend(Some(args));
+            output.extend(Some(Punct::new(';', Spacing::Alone)));
         }
         TokenTree::Ident(ident) => {
             let ident_string = ident.to_string();

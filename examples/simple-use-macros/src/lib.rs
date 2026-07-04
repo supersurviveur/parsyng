@@ -32,12 +32,16 @@ pub fn simple_macro(n: Crate) -> Result<TokenStream> {
 }
 
 #[parsyng::proc_macro_attribute(debug)]
-pub fn simple_macro_attribute(attrs: Foo, _n: Crate) -> Result<TokenStream> {
+pub fn simple_macro_attribute(attrs: Foo, _n: Crate) -> Result<Crate> {
     let _tokens = quote! {
         #{_n}
+        {
+            #_n
+        }
+        #_n
     };
     println!("{}", quote! {#attrs});
-    Ok(_tokens)
+    Ok(_n)
 }
 
 #[parsyng::proc_macro_derive(Simple, debug)]
