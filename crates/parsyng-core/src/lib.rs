@@ -99,7 +99,7 @@ pub fn debug_stream(macro_name: &str, call_location: &str, input: &crate::proc_m
     {
         output = input;
     }
-    println!(
+    eprintln!(
         "[DEBUG] proc-macro `{}` called at {}\n{}",
         macro_name, call_location, output
     );
