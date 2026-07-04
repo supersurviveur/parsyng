@@ -1,6 +1,6 @@
+use simple_use_macros::Simple;
 use simple_use_macros::simple_macro;
 use simple_use_macros::simple_macro_attribute;
-use simple_use_macros::Simple;
 
 fn main() {
     println!("Hello, world!");
@@ -18,8 +18,7 @@ fn main() {
 }
 
 #[simple_macro_attribute(88, sen)]
-struct A {}
+struct _A {}
 
 #[derive(Simple)]
 struct _B {}
-

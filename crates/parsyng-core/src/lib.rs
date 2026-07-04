@@ -51,7 +51,8 @@ pub trait ToTokens {
 }
 
 #[doc(hidden)]
-pub fn debug_stream(input: &crate::proc_macro::TokenStream) {
+pub fn debug_stream(macro_name: &str, call_location: &str, input: &crate::proc_macro::TokenStream) {
+    let output;
     #[cfg(feature = "debug-pretty")]
     {
         use std::{
@@ -92,11 +93,14 @@ pub fn debug_stream(input: &crate::proc_macro::TokenStream) {
             Some(output)
         }
 
-        println!(
-            "{}",
-            catch_rustfmt_errors(input).unwrap_or(input.to_string())
-        );
+        output = catch_rustfmt_errors(input).unwrap_or(input.to_string());
     }
     #[cfg(not(feature = "debug-pretty"))]
-    println!("{}", input);
+    {
+        output = input;
+    }
+    println!(
+        "[DEBUG] proc-macro `{}` called at {}\n{}",
+        macro_name, call_location, output
+    );
 }

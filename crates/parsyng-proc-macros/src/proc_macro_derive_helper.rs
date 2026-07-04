@@ -1,6 +1,7 @@
-use parsyng_core::ast::tokens::Comma;
 use parsyng_core as parsyng;
 use parsyng_core::ToTokens;
+use parsyng_core::ast::tokens::Comma;
+use parsyng_core::proc_macro::Span;
 
 use parsyng_core::format_ident;
 use parsyng_core::quote;
@@ -40,7 +41,15 @@ pub fn proc_macro_derive(args: TokenStream, input: TokenStream) -> error::Result
         args.parse::<Comma>()?;
         let ident = args.parse::<Ident>()?;
         if ident.to_string() == "debug" {
-            dbg_macros()
+            dbg_macros(
+                macro_ident,
+                format!(
+                    "{}:{}:{}",
+                    Span::call_site().file(),
+                    Span::call_site().line(),
+                    Span::call_site().column()
+                ),
+            )
         } else {
             return Err(Diagnostics::new_error_spanned(
                 "Expected `debug` or no arguments.",

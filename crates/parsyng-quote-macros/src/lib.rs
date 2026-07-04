@@ -62,9 +62,8 @@ pub fn quote_spanned(input: TokenStream) -> TokenStream {
 fn parse_tokenstream(stream: TokenStream, span: bool) -> TokenStream {
     let mut output: TokenStream = TokenStream::new();
 
-    output.extend(
-        "let mut tokens = parsyng::proc_macro::TokenStream::new();".parse::<TokenStream>(),
-    );
+    output
+        .extend("let mut tokens = parsyng::proc_macro::TokenStream::new();".parse::<TokenStream>());
 
     let mut iter = stream.into_iter().peekable();
 

@@ -8,6 +8,7 @@ use parsyng_core::{
     error::{self, Diagnostics},
     parse,
 };
+use proc_macro::Span;
 use proc_macro::{Ident, TokenStream};
 
 use crate::dbg_macros;
@@ -40,7 +41,15 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
     let dbg = if !args.is_empty() {
         let ident = args.parse::<Ident>()?;
         if ident.to_string() == "debug" {
-            dbg_macros()
+            dbg_macros(
+                macro_ident,
+                format!(
+                    "{}:{}:{}",
+                    Span::call_site().file(),
+                    Span::call_site().line(),
+                    Span::call_site().column()
+                ),
+            )
         } else {
             return Err(Diagnostics::new_error_spanned(
                 "Expected `debug` or no arguments.",

@@ -1,11 +1,16 @@
-use parsyng::{Parse, ToTokens, ast::{crate_source::Crate, item::r#struct::Struct, tokens::Comma}, error::Result, quote};
+use parsyng::{
+    Parse, ToTokens,
+    ast::{crate_source::Crate, item::r#struct::Struct, tokens::Comma},
+    error::Result,
+    quote,
+};
 use proc_macro::{Ident, TokenStream};
 
 #[derive(Parse, ToTokens)]
 pub(crate) struct Foo {
     bar: u8,
     comma: Comma,
-    then: Ident
+    then: Ident,
 }
 
 #[parsyng::proc_macro(debug)]
@@ -29,10 +34,10 @@ pub fn simple_macro(n: Crate) -> Result<TokenStream> {
 #[parsyng::proc_macro_attribute(debug)]
 pub fn simple_macro_attribute(attrs: Foo, _n: Crate) -> Result<TokenStream> {
     let _tokens = quote! {
-        #{attrs}
+        #{_n}
     };
-    println!("{}", _tokens);
-    Ok(TokenStream::new())
+    println!("{}", quote! {#attrs});
+    Ok(_tokens)
 }
 
 #[parsyng::proc_macro_derive(Simple, debug)]

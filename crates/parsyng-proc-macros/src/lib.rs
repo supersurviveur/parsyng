@@ -1,7 +1,7 @@
 use parsyng_core as parsyng;
 
 use parsyng_core::quote;
-use proc_macro::TokenStream;
+use proc_macro::{Ident, TokenStream};
 
 mod derive_parse;
 mod derive_to_tokens;
@@ -9,9 +9,9 @@ mod proc_macro_attribute_helper;
 mod proc_macro_derive_helper;
 mod proc_macro_helper;
 
-pub(crate) fn dbg_macros() -> TokenStream {
+pub(crate) fn dbg_macros(macro_name: &Ident, location: String) -> TokenStream {
     quote! {
-        parsyng::debug_stream(&output);
+        parsyng::debug_stream(#{ macro_name.to_string() }, #location, &output);
     }
 }
 
