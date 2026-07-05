@@ -10,7 +10,12 @@ members = [
   "benches/bench-quote-comptime",
 
   "examples/simple-use",
-  "examples/simple-use-macros", "examples/heapsize/heapsize", "examples/heapsize/heapsize-macros", "examples/heapsize/example",
+  "examples/simple-use-macros",
+  "examples/heapsize/heapsize",
+  "examples/heapsize/heapsize-macros",
+  "examples/heapsize/example",
+  "examples/debug-attribute/debug-attribute-macros",
+  "examples/debug-attribute/example",
 ]
 
 [package]
