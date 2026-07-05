@@ -1,3 +1,8 @@
+//! Core parsing and quoting primitives for `parsyng`.
+//!
+//! This crate provides the token-stream wrapper, parsing traits, AST types,
+//! and quote helpers used by the proc-macro front-end.
+
 #![deny(clippy::all)]
 
 // Put proc_macro in a private module to avoid being able to use `proc_macro::...` directly in this crate
@@ -12,17 +17,24 @@ pub use sealed::proc_macro;
 #[cfg(feature = "proc-macro2")]
 pub use proc_macro2 as proc_macro;
 
+/// AST nodes and token wrappers for Rust syntax fragments.
 pub mod ast;
+/// Parser combinators used by the syntax tree types.
 pub mod combinator;
+/// Error and diagnostic types returned by parsers.
 pub mod error;
+/// The `ParseBuffer` type and parsing traits.
 pub mod parse;
+/// Helpers for proc-macro specific token manipulation.
 pub mod proc_macro_ext;
+/// Quote-related token construction helpers and macros.
 pub mod quote;
+/// Span helpers and utilities.
 pub mod span;
 
 pub use parse::Parse;
 
-// TODO: Try removing this and export it in `parsyng` to gain some compile time.
+/// `quote!` and `quote_spanned!` macros for constructing token streams.
 pub use parsyng_quote_macros::{quote, quote_spanned};
 
 #[macro_export]
@@ -33,6 +45,7 @@ macro_rules! parse_quote {
     }};
 }
 
+/// Build a `Ident` using `format!`-style syntax.
 #[macro_export]
 macro_rules! format_ident {
     ($($args:tt)*) => {
@@ -40,9 +53,12 @@ macro_rules! format_ident {
     };
 }
 
+/// Convert a value into a token stream.
 pub trait ToTokens {
+    /// Append this value to the provided token stream.
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream);
 
+    /// Convert this value into a new token stream.
     fn to_token_stream(&self) -> crate::proc_macro::TokenStream {
         let mut token_stream = crate::proc_macro::TokenStream::new();
         self.to_tokens(&mut token_stream);
@@ -51,6 +67,7 @@ pub trait ToTokens {
 }
 
 #[doc(hidden)]
+/// Print the generated output of a proc-macro when debug mode is enabled.
 pub fn debug_stream(macro_name: &str, call_location: &str, input: &crate::proc_macro::TokenStream) {
     let output;
     #[cfg(feature = "debug-pretty")]

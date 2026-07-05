@@ -15,6 +15,7 @@ pub struct ParseBuffer {
 }
 
 impl ParseBuffer {
+    /// Create a new buffer from a token stream.
     #[must_use]
     pub fn new(inner: crate::proc_macro::TokenStream) -> Self {
         let mut inner = inner.into_iter().peekable();
@@ -24,43 +25,51 @@ impl ParseBuffer {
         }
     }
 
+    /// Span of the next token, or the last consumed token if the stream is empty.
     pub fn span(&mut self) -> Span {
         let last_span = self.last_span;
         self.peek().map_or(last_span, |tt| tt.span())
     }
 
+    /// Return `true` when no tokens remain.
     pub fn is_empty(&mut self) -> bool {
         self.peek().is_none()
     }
 
+    /// Inspect the next token without consuming it.
     pub fn peek(&mut self) -> Option<&TokenTree> {
         self.inner.peek()
     }
 
+    /// Inspect the next token as a group without consuming it.
     pub fn peek_group(&mut self) -> Option<&Group> {
         self.peek().and_then(|token| match token {
             TokenTree::Group(group) => Some(group),
             _ => None,
         })
     }
+    /// Inspect the next token as an identifier without consuming it.
     pub fn peek_ident(&mut self) -> Option<&crate::proc_macro::Ident> {
         self.peek().and_then(|token| match token {
             TokenTree::Ident(ident) => Some(ident),
             _ => None,
         })
     }
+    /// Inspect the next token as punctuation without consuming it.
     pub fn peek_punct(&mut self) -> Option<&crate::proc_macro::Punct> {
         self.peek().and_then(|token| match token {
             TokenTree::Punct(punct) => Some(punct),
             _ => None,
         })
     }
+    /// Inspect the next token as a literal without consuming it.
     pub fn peek_literal(&mut self) -> Option<&crate::proc_macro::Literal> {
         self.peek().and_then(|token| match token {
             TokenTree::Literal(literal) => Some(literal),
             _ => None,
         })
     }
+    /// Consume and return the next group token.
     pub fn group(&mut self) -> Option<Group> {
         match self.peek_group() {
             Some(_) => match self.next().unwrap() {
@@ -70,18 +79,7 @@ impl ParseBuffer {
             None => None,
         }
     }
-    // pub fn group_and_then<T, F: FnOnce(&Group) -> Result<Option<T>>>(
-    //     &mut self,
-    //     f: F,
-    // ) -> Option<(Group, T)> {
-    //     match self.peek_group() {
-    //         Some(group) => match f(group) {
-    //             Ok(value) => Some((self.group().unwrap(), value)),
-    //             Err(e) => e,
-    //         },
-    //         _ => None,
-    //     }
-    // }
+    /// Consume and return the next identifier token.
     pub fn ident(&mut self) -> Option<crate::proc_macro::Ident> {
         match self.peek_ident() {
             Some(_) => match self.next().unwrap() {
@@ -91,6 +89,7 @@ impl ParseBuffer {
             None => None,
         }
     }
+    /// Consume and return the next identifier when it matches a predicate.
     pub fn ident_and<F: FnOnce(&Ident) -> bool>(
         &mut self,
         f: F,
@@ -103,6 +102,7 @@ impl ParseBuffer {
             _ => None,
         }
     }
+    /// Consume and return the next literal token.
     pub fn literal(&mut self) -> Option<crate::proc_macro::Literal> {
         match self.peek_literal() {
             Some(_) => match self.next().unwrap() {
@@ -112,6 +112,7 @@ impl ParseBuffer {
             None => None,
         }
     }
+    /// Consume and return the next punctuation token.
     pub fn punct(&mut self) -> Option<crate::proc_macro::Punct> {
         match self.peek_punct() {
             Some(_) => match self.next().unwrap() {
@@ -121,6 +122,7 @@ impl ParseBuffer {
             None => None,
         }
     }
+    /// Consume and return the next punctuation token when it matches a predicate.
     pub fn punct_and<F: FnOnce(&Punct) -> bool>(
         &mut self,
         f: F,
@@ -134,6 +136,7 @@ impl ParseBuffer {
         }
     }
 
+    /// Try a parse on a cloned cursor and commit the result only on success.
     pub fn try_advance<T: Parse, F: FnOnce(&mut Self) -> Result<T>>(&mut self, f: F) -> Result<T> {
         let mut fork = self.clone();
         match f(&mut fork) {
@@ -145,15 +148,17 @@ impl ParseBuffer {
         }
     }
 
+    /// Try to parse a value without consuming input on failure.
     pub fn try_parse<T: Parse>(&mut self) -> Result<T> {
         self.try_advance(T::parse)
     }
 
+    /// Parse a value from the current cursor.
     pub fn parse<T: Parse>(&mut self) -> Result<T> {
         T::parse(self)
     }
 
-    /// Same as [Self::parse], but guaranteed that if the parsing fails, the stream didn't advanced.
+    /// Parse a value without advancing the input on failure.
     pub fn peek_parse<T: Peek>(&mut self) -> Result<T> {
         T::parse(self)
     }
@@ -185,13 +190,16 @@ pub trait Parse {
         Self: Sized;
 }
 
+/// Marker trait for type that can be parsed without advancing the cursor in case of failure.
 pub trait Peek: Parse {}
 
+/// Wrapper to implement [Peek] any type wich implements [Parse] by cloning the [ParseBuffer] when parsing.
 pub struct Peekable<T> {
     inner: T,
 }
 
 impl<T> Peekable<T> {
+    /// Consume the wrapper and return the parsed value.
     pub fn inner(self) -> T {
         self.inner
     }
@@ -207,6 +215,7 @@ impl<T: Parse> Parse for Peekable<T> {
 
 impl<T: Parse> Peek for Peekable<T> {}
 
+/// A placeholder type that parses and prints nothing.
 pub type Nothing = ();
 
 impl Parse for Nothing {
@@ -227,6 +236,7 @@ impl<T: Parse> Parse for Box<T> {
     }
 }
 
+/// A sentinel type that always fails to parse.
 #[derive(Clone, Default, Debug)]
 pub struct Invalid;
 
