@@ -93,18 +93,20 @@ pub enum DeriveInput {
 }
 
 impl DeriveInput {
+    #[must_use]
     pub fn generics_parameters(&self) -> Option<&GenericParams> {
         match self {
-            DeriveInput::Struct(vis_item) => vis_item.generic_parameters(),
-            DeriveInput::Enum(_vis_item) => todo!(),
+            Self::Struct(vis_item) => vis_item.generic_parameters(),
+            Self::Enum(_vis_item) => todo!(),
         }
     }
     pub fn generics_parameters_mut(&mut self) -> Option<&mut GenericParams> {
         match self {
-            DeriveInput::Struct(vis_item) => vis_item.generic_parameters_mut(),
-            DeriveInput::Enum(_vis_item) => todo!(),
+            Self::Struct(vis_item) => vis_item.generic_parameters_mut(),
+            Self::Enum(_vis_item) => todo!(),
         }
     }
+    #[must_use]
     pub fn split_generics_for_impl(
         &self,
     ) -> (
@@ -113,17 +115,18 @@ impl DeriveInput {
         Option<&WhereClause>,
     ) {
         match self {
-            DeriveInput::Struct(vis_item) => vis_item.split_generics_for_impl(),
-            DeriveInput::Enum(_vis_item) => todo!(),
+            Self::Struct(vis_item) => vis_item.split_generics_for_impl(),
+            Self::Enum(_vis_item) => todo!(),
         }
     }
 }
 
 impl DeriveInput {
+    #[must_use]
     pub fn ident(&self) -> &Ident {
         match self {
-            DeriveInput::Struct(vis_item) => vis_item.ident(),
-            DeriveInput::Enum(vis_item) => vis_item.ident(),
+            Self::Struct(vis_item) => vis_item.ident(),
+            Self::Enum(vis_item) => vis_item.ident(),
         }
     }
 }
@@ -311,21 +314,21 @@ impl Parse for DeriveInput {
 impl ToTokens for Item {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Item::Struct(vis_item) => vis_item.to_tokens(tokens),
-            Item::Const(vis_item) => vis_item.to_tokens(tokens),
-            Item::TypeAlias(vis_item) => vis_item.to_tokens(tokens),
-            Item::Use(vis_item) => vis_item.to_tokens(tokens),
-            Item::ExternCrate(vis_item) => vis_item.to_tokens(tokens),
-            Item::ExternBlock(vis_item) => vis_item.to_tokens(tokens),
-            Item::Mod(vis_item) => vis_item.to_tokens(tokens),
-            Item::Enum(vis_item) => vis_item.to_tokens(tokens),
-            Item::Function(vis_item) => vis_item.to_tokens(tokens),
-            Item::Trait(vis_item) => vis_item.to_tokens(tokens),
-            Item::Static(vis_item) => vis_item.to_tokens(tokens),
-            Item::MacroRules(vis_item) => vis_item.to_tokens(tokens),
-            Item::Macro(vis_item) => vis_item.to_tokens(tokens),
-            Item::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
-            Item::Impl(implementation) => implementation.to_tokens(tokens),
+            Self::Struct(vis_item) => vis_item.to_tokens(tokens),
+            Self::Const(vis_item) => vis_item.to_tokens(tokens),
+            Self::TypeAlias(vis_item) => vis_item.to_tokens(tokens),
+            Self::Use(vis_item) => vis_item.to_tokens(tokens),
+            Self::ExternCrate(vis_item) => vis_item.to_tokens(tokens),
+            Self::ExternBlock(vis_item) => vis_item.to_tokens(tokens),
+            Self::Mod(vis_item) => vis_item.to_tokens(tokens),
+            Self::Enum(vis_item) => vis_item.to_tokens(tokens),
+            Self::Function(vis_item) => vis_item.to_tokens(tokens),
+            Self::Trait(vis_item) => vis_item.to_tokens(tokens),
+            Self::Static(vis_item) => vis_item.to_tokens(tokens),
+            Self::MacroRules(vis_item) => vis_item.to_tokens(tokens),
+            Self::Macro(vis_item) => vis_item.to_tokens(tokens),
+            Self::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
+            Self::Impl(implementation) => implementation.to_tokens(tokens),
         }
     }
 }
@@ -361,10 +364,9 @@ pub struct WhereClause {
 }
 
 #[derive(Clone, Debug)]
-#[allow(clippy::large_enum_variant)]
 pub enum WhereClauseItem {
     Lifetime(LifetimeWhereClauseItem),
-    Type(TypeBoundWhereClauseItem),
+    Type(Box<TypeBoundWhereClauseItem>),
 }
 
 #[derive(Clone, Debug)]
@@ -390,11 +392,29 @@ pub struct GenericParams {
 }
 
 impl GenericParams {
+    #[must_use]
     pub fn iter(&self) -> PunctuatedIter<'_, GenericParam, Comma> {
         self.generics.iter()
     }
+    #[must_use]
     pub fn iter_mut(&mut self) -> PunctuatedIterMut<'_, GenericParam, Comma> {
         self.generics.iter_mut()
+    }
+}
+
+impl<'a> IntoIterator for &'a GenericParams {
+    type Item = &'a GenericParam;
+    type IntoIter = PunctuatedIter<'a, GenericParam, Comma>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut GenericParams {
+    type Item = &'a mut GenericParam;
+    type IntoIter = PunctuatedIterMut<'a, GenericParam, Comma>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
 
@@ -425,7 +445,8 @@ impl Default for TypeParamBounds {
 }
 
 impl TypeParamBounds {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             bounds: Punctuated::new(),
         }
@@ -443,10 +464,11 @@ pub enum TypeParamBound {
 }
 
 impl TypeParamBound {
+    #[must_use]
     pub fn span(&self) -> Span {
         match self {
-            TypeParamBound::Trait(trait_bound) => trait_bound.span(),
-            TypeParamBound::Lifetime(lifetime) => lifetime.span(),
+            Self::Trait(trait_bound) => trait_bound.span(),
+            Self::Lifetime(lifetime) => lifetime.span(),
         }
     }
 }
@@ -466,6 +488,7 @@ pub struct TraitBound {
 }
 
 impl TraitBound {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.path.span()
     }
@@ -478,6 +501,7 @@ pub struct Lifetime {
 }
 
 impl Lifetime {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.quote.span()
     }
@@ -522,11 +546,11 @@ impl Parse for WhereClauseItem {
 impl ToTokens for WhereClauseItem {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            WhereClauseItem::Lifetime(lifetime_where_clause_item) => {
-                lifetime_where_clause_item.to_tokens(tokens)
+            Self::Lifetime(lifetime_where_clause_item) => {
+                lifetime_where_clause_item.to_tokens(tokens);
             }
-            WhereClauseItem::Type(type_bound_where_clause_item) => {
-                type_bound_where_clause_item.to_tokens(tokens)
+            Self::Type(type_bound_where_clause_item) => {
+                type_bound_where_clause_item.to_tokens(tokens);
             }
         }
     }

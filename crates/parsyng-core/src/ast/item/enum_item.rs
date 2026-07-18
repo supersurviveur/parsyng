@@ -47,7 +47,8 @@ pub struct EnumField {
 }
 
 impl EnumItem {
-    pub fn ident(&self) -> &Ident {
+    #[must_use]
+    pub const fn ident(&self) -> &Ident {
         &self.ident
     }
 }
@@ -127,9 +128,9 @@ impl ToTokens for EnumVariant {
 impl ToTokens for EnumVariantFields {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            EnumVariantFields::Named(fields) => fields.to_tokens(tokens),
-            EnumVariantFields::Unnamed(fields) => fields.to_tokens(tokens),
-            EnumVariantFields::Unit => {}
+            Self::Named(fields) => fields.to_tokens(tokens),
+            Self::Unnamed(fields) => fields.to_tokens(tokens),
+            Self::Unit => {}
         }
     }
 }

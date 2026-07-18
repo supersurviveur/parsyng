@@ -1,7 +1,52 @@
+#![deny(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo,
+    // rustdoc::all,
+    rustdoc::redundant_explicit_links,
+    invalid_doc_attributes,
+    unused_doc_comments,
+    // missing_docs
+)]
+#![allow(clippy::too_many_lines)]
+
 use proc_macro::{Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 const INTERPOLATION_CHAR: char = '#';
 
+/// Generates a [`proc_macro::TokenStream`] from its input while interpolating variables.
+/// This works similarly to rust declarative macros, but using `#` instead of `$` for interpolation.
+///
+/// Interpolation is done with `#variable`, or `#{ expression }`.
+/// Repetition can be done with `#(#vec),*`
+///
+/// # Example
+/// ```
+/// use parsyng::quote;
+/// 
+/// let number = 3;
+///
+/// // Interpolation
+/// quote! {
+///     foo(#number)
+/// };
+/// 
+/// let literal = "This is a string literal";
+///
+/// // Expression interpolation
+/// quote! {
+///     let uppercase = #{ literal.to_uppercase() };
+/// };
+/// 
+/// let digits = vec![2, 5, 3, 1];
+/// let mut digits = digits.iter();
+///
+/// // Repetitions
+/// quote! {
+///     0 #(+ #digits)*
+/// };
+/// ```
 #[proc_macro]
 pub fn quote(input: TokenStream) -> TokenStream {
     parse_tokenstream(input, false, &mut None, &mut Vec::new())
@@ -35,11 +80,11 @@ pub fn quote_spanned(input: TokenStream) -> TokenStream {
         Some(TokenTree::Punct(ref punct)) => punct.as_char() != '>',
         _ => false,
     } {
-        return make_compile_error(tt.clone().map_or(Span::call_site(), |tt| tt.span()), {
+        return make_compile_error(tt.clone().map_or_else(Span::call_site, |tt| tt.span()), {
             let mut tk = TokenStream::new();
             tk.extend([Literal::string(&format!(
                 "expected '>', found '{}'",
-                tt.map_or("<eof>".to_string(), |tt| tt.to_string())
+                tt.map_or_else(|| "<eof>".to_string(), |tt| tt.to_string())
             ))]);
             tk
         });
@@ -47,7 +92,11 @@ pub fn quote_spanned(input: TokenStream) -> TokenStream {
 
     let mut output = TokenStream::new();
 
-    output.extend::<TokenStream>("let span =".parse().unwrap());
+    output.extend::<[TokenTree; _]>([
+        TokenTree::Ident(Ident::new("let", Span::call_site())),
+        TokenTree::Ident(Ident::new("span", Span::call_site())),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+    ]);
     output.extend(span);
     output.extend::<[TokenTree; _]>([TokenTree::Punct(Punct::new(';', Spacing::Alone))]);
 
@@ -142,9 +191,8 @@ fn parse_tokenstream(
                     && let Some(TokenTree::Group(g)) = iter.peek()
                     && g.delimiter() == proc_macro::Delimiter::Brace =>
             {
-                let g = match iter.next().unwrap() {
-                    TokenTree::Group(group) => group,
-                    _ => unreachable!(),
+                let TokenTree::Group(g) = iter.next().unwrap() else {
+                    unreachable!()
                 };
                 Some(TokenTree::Group(Group::new(
                     proc_macro::Delimiter::None,
@@ -165,9 +213,8 @@ fn parse_tokenstream(
                         tk
                     });
                 }
-                let g = match iter.next().unwrap() {
-                    TokenTree::Group(group) => group,
-                    _ => unreachable!(),
+                let TokenTree::Group(g) = iter.next().unwrap() else {
+                    unreachable!()
                 };
 
                 let mut first_loop = TokenStream::new();
@@ -288,8 +335,8 @@ fn token_to_construction_code(
                 repetition_ident_already_used,
             );
 
-            let f = format!("parsyng::quote::__private::push_group{}", spanned_fn)
-                .parse::<TokenStream>();
+            let f =
+                format!("parsyng::quote::__private::push_group{spanned_fn}").parse::<TokenStream>();
 
             let mut args = format!("parsyng::proc_macro::Delimiter::{:?}, ", group.delimiter())
                 .parse::<TokenStream>()
@@ -297,7 +344,7 @@ fn token_to_construction_code(
 
             args.extend(inner);
 
-            args.extend(format!(", {}&mut tokens", spanned_arg).parse::<TokenStream>());
+            args.extend(format!(", {spanned_arg}&mut tokens").parse::<TokenStream>());
 
             let args = TokenTree::Group(Group::new(proc_macro::Delimiter::Parenthesis, args));
 
@@ -310,16 +357,14 @@ fn token_to_construction_code(
             if let Some(raw_ident) = ident_string.strip_prefix("r#") {
                 output.extend(
                     format!(
-                        "parsyng::quote::__private::push_ident_raw{}(\"{}\", {}&mut tokens);",
-                        spanned_fn, raw_ident, spanned_arg,
+                        "parsyng::quote::__private::push_ident_raw{spanned_fn}(\"{raw_ident}\", {spanned_arg}&mut tokens);",
                     )
                     .parse::<TokenStream>(),
                 );
             } else {
                 output.extend(
                     format!(
-                        "parsyng::quote::__private::push_ident{}(\"{}\", {}&mut tokens);",
-                        spanned_fn, ident_string, spanned_arg,
+                        "parsyng::quote::__private::push_ident{spanned_fn}(\"{ident_string}\", {spanned_arg}&mut tokens);",
                     )
                     .parse::<TokenStream>(),
                 );
@@ -350,10 +395,7 @@ fn token_to_construction_code(
             let literal_escaped = literal.escape_default();
             output.extend(
                 format!(
-                    "parsyng::quote::__private::push_lit{}(\"{}\".parse::<parsyng::proc_macro::TokenStream>().unwrap(), {}&mut tokens);",
-                    spanned_fn,
-                    literal_escaped,
-                    spanned_arg,
+                    "parsyng::quote::__private::push_lit{spanned_fn}(\"{literal_escaped}\".parse::<parsyng::proc_macro::TokenStream>().unwrap(), {spanned_arg}&mut tokens);",
                 )
                 .parse::<TokenStream>(),
             );

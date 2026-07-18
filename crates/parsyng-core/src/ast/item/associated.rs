@@ -24,10 +24,9 @@ pub struct TypeAlias {
 }
 
 #[derive(Clone, Debug)]
-#[allow(clippy::large_enum_variant)]
 pub enum AssociatedAlias {
-    TypeAlias(Visibility, TypeAlias),
-    Const(Visibility, ConstantItem),
+    TypeAlias(Visibility, Box<TypeAlias>),
+    Const(Visibility, Box<ConstantItem>),
 }
 
 impl Parse for TypeAlias {
@@ -85,11 +84,11 @@ impl Parse for AssociatedAlias {
 impl ToTokens for AssociatedAlias {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            AssociatedAlias::TypeAlias(visibility, type_alias) => {
+            Self::TypeAlias(visibility, type_alias) => {
                 visibility.to_tokens(tokens);
                 type_alias.to_tokens(tokens);
             }
-            AssociatedAlias::Const(visibility, constant_item) => {
+            Self::Const(visibility, constant_item) => {
                 visibility.to_tokens(tokens);
                 constant_item.to_tokens(tokens);
             }

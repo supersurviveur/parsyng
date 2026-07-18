@@ -3,7 +3,7 @@ use parsyng_core::ast::item::r#struct::StructFields;
 
 use parsyng_core::quote;
 use parsyng_core::{ast::item::ItemStruct, error, parse};
-use proc_macro::TokenStream;
+use parsyng_core::proc_macro::TokenStream;
 
 pub fn derive_parse(input: TokenStream) -> error::Result<TokenStream> {
     let mut stream = parse::ParseBuffer::new(input);

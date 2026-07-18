@@ -32,27 +32,34 @@ pub enum Literal {
 }
 
 impl LiteralNumber {
+    #[must_use]
     pub fn content(&self) -> &str {
         &self.content[self.prefix.end..self.suffix.start]
     }
+    #[must_use]
     pub fn prefix(&self) -> &str {
         &self.content[self.prefix]
     }
+    #[must_use]
     pub fn suffix(&self) -> &str {
         &self.content[self.suffix]
     }
-    pub fn span(&self) -> Span {
+    #[must_use]
+    pub const fn span(&self) -> Span {
         self.span
     }
 }
 impl LiteralFloat {
+    #[must_use]
     pub fn content(&self) -> &str {
         &self.content[0..self.suffix.start]
     }
+    #[must_use]
     pub fn suffix(&self) -> &str {
         &self.content[self.suffix]
     }
-    pub fn span(&self) -> Span {
+    #[must_use]
+    pub const fn span(&self) -> Span {
         self.span
     }
 }
@@ -91,17 +98,15 @@ impl Parse for Literal {
                 todo!()
             } else if literal_str.starts_with("b'") {
                 todo!()
-            } else {
-                if (literal_str.starts_with("0x") || !literal_str.contains(['f', 'e']))
-                    && !literal_str.contains('.')
-                {
-                    return Ok(Literal::UInt(parse_integer_literal(
-                        literal_str,
-                        literal.span(),
-                    )?));
-                } else if let Ok(float) = parse_float_literal(literal_str, literal.span()) {
-                    return Ok(Literal::Float(float));
-                }
+            } else if (literal_str.starts_with("0x") || !literal_str.contains(['f', 'e']))
+                && !literal_str.contains('.')
+            {
+                return Ok(Self::UInt(parse_integer_literal(
+                    literal_str,
+                    literal.span(),
+                )?));
+            } else if let Ok(float) = parse_float_literal(literal_str, literal.span()) {
+                return Ok(Self::Float(float));
             }
         }
         Err(Diagnostics::new_error_spanned(
@@ -321,8 +326,8 @@ fn parse_float_literal(literal: String, span: Span) -> Result<LiteralFloat> {
 impl ToTokens for Literal {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Literal::UInt(literal_number) => literal_number.to_tokens(tokens),
-            Literal::Float(literal_float) => literal_float.to_tokens(tokens),
+            Self::UInt(literal_number) => literal_number.to_tokens(tokens),
+            Self::Float(literal_float) => literal_float.to_tokens(tokens),
         }
     }
 }

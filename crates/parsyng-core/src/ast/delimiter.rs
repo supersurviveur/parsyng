@@ -18,7 +18,7 @@ macro_rules! make_delimiters {
         }
 
         impl<T> $name<T> {
-            pub fn new(group: Group, content: T) -> Self {
+            pub const fn new(group: Group, content: T) -> Self {
                 Self { group, content }
             }
             pub fn span(&self) -> Span {
@@ -27,7 +27,7 @@ macro_rules! make_delimiters {
             pub fn inner(self) -> T {
                 self.content
             }
-            pub fn inner_ref(&self) -> &T {
+            pub const fn inner_ref(&self) -> &T {
                 &self.content
             }
             pub fn map<R, F: FnOnce(T) -> R>(self, f: F) -> $name<R> {

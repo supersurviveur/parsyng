@@ -57,10 +57,10 @@ impl ToTokens for ImplItem {
 impl ToTokens for ImplItemKind {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            ImplItemKind::Type(item) => item.to_tokens(tokens),
-            ImplItemKind::Const(item) => item.to_tokens(tokens),
-            ImplItemKind::Function(item) => item.to_tokens(tokens),
-            ImplItemKind::Macro(item) => item.to_tokens(tokens),
+            Self::Type(item) => item.to_tokens(tokens),
+            Self::Const(item) => item.to_tokens(tokens),
+            Self::Function(item) => item.to_tokens(tokens),
+            Self::Macro(item) => item.to_tokens(tokens),
         }
     }
 }

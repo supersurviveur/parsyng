@@ -47,6 +47,7 @@ pub struct TypePathSegment {
 }
 
 impl TypePathSegment {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.path_ident.span()
     }
@@ -92,18 +93,16 @@ impl Parse for TypePathSegment {
             args: input
                 .try_parse::<(Option<Peekable<_>>, _)>()
                 .ok()
-                .map(|(sep, generics)| (sep.map(|sep| sep.inner()), generics)),
+                .map(|(sep, generics)| (sep.map(Peekable::inner), generics)),
         })
     }
 }
 impl ToTokens for GenericArg {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            GenericArg::Type(ty) => ty.to_tokens(tokens),
-            GenericArg::Lifetime(lifetime) => lifetime.to_tokens(tokens),
-            GenericArg::Bindings(ident, generics, eq, ty) => {
-                (ident, generics, eq, ty).to_tokens(tokens)
-            }
+            Self::Type(ty) => ty.to_tokens(tokens),
+            Self::Lifetime(lifetime) => lifetime.to_tokens(tokens),
+            Self::Bindings(ident, generics, eq, ty) => (ident, generics, eq, ty).to_tokens(tokens),
         }
     }
 }
@@ -111,12 +110,7 @@ impl ToTokens for GenericArg {
 impl Parse for GenericArg {
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         if let Ok((ident, generics, eq, ty)) = input.try_parse::<(_, Option<Peekable<_>>, _, _)>() {
-            Ok(Self::Bindings(
-                ident,
-                generics.map(|peekable| peekable.inner()),
-                eq,
-                ty,
-            ))
+            Ok(Self::Bindings(ident, generics.map(Peekable::inner), eq, ty))
         } else if let Ok(ty) = input.try_parse() {
             Ok(Self::Type(Box::new(ty)))
         } else if let Ok(lifetime) = input.try_parse() {
@@ -157,7 +151,7 @@ impl Parse for TypePathFn {
         Ok(Self {
             inputs: input
                 .parse::<Parenthesized<Option<Peekable<_>>>>()?
-                .map(|inputs| inputs.map(|inner| inner.inner())),
+                .map(|inputs| inputs.map(Peekable::inner)),
             return_type: input.try_parse().ok(),
         })
     }

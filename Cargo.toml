@@ -20,11 +20,13 @@ members = [
 
 [package]
 name = "parsyng"
+description = "Procedural macro parsyng"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
-keywords = ["macros", "proc"]
+repository = "https://github.com/supersurviveur/parsyng"
+keywords = ["macros", "proc", "quote"]
 categories = ["development-tools::procedural-macro-helpers"]
 
 [dependencies]

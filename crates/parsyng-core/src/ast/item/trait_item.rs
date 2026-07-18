@@ -124,9 +124,9 @@ impl ToTokens for TraitItemMember {
 impl ToTokens for TraitItemKind {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            TraitItemKind::Type(item) => item.to_tokens(tokens),
-            TraitItemKind::Const(item) => item.to_tokens(tokens),
-            TraitItemKind::Function(item) => item.to_tokens(tokens),
+            Self::Type(item) => item.to_tokens(tokens),
+            Self::Const(item) => item.to_tokens(tokens),
+            Self::Function(item) => item.to_tokens(tokens),
         }
     }
 }
@@ -141,8 +141,8 @@ impl ToTokens for TraitFunction {
 impl ToTokens for TraitFunctionBody {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            TraitFunctionBody::Block(block) => block.to_tokens(tokens),
-            TraitFunctionBody::Semicolon(semicolon) => semicolon.to_tokens(tokens),
+            Self::Block(block) => block.to_tokens(tokens),
+            Self::Semicolon(semicolon) => semicolon.to_tokens(tokens),
         }
     }
 }

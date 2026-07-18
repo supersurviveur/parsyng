@@ -74,9 +74,9 @@ impl Parse for UseTree {
         }
         if let Ok(colon) = input.try_parse::<PathSep>() {
             let tree = if let Ok(group) = input.try_parse() {
-                UseTree::Group(Box::new(UseGroup { group }))
+                Self::Group(Box::new(UseGroup { group }))
             } else if let Ok(star) = input.try_parse() {
-                UseTree::Glob(star)
+                Self::Glob(star)
             } else {
                 input.parse()?
             };
@@ -102,11 +102,11 @@ impl ToTokens for UseItem {
 impl ToTokens for UseTree {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            UseTree::Path(path) => path.to_tokens(tokens),
-            UseTree::Name(name) => name.to_tokens(tokens),
-            UseTree::Rename(rename) => rename.to_tokens(tokens),
-            UseTree::Glob(glob) => glob.to_tokens(tokens),
-            UseTree::Group(group) => group.to_tokens(tokens),
+            Self::Path(path) => path.to_tokens(tokens),
+            Self::Name(name) => name.to_tokens(tokens),
+            Self::Rename(rename) => rename.to_tokens(tokens),
+            Self::Glob(glob) => glob.to_tokens(tokens),
+            Self::Group(group) => group.to_tokens(tokens),
         }
     }
 }

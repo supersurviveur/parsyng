@@ -60,20 +60,20 @@ impl Parse for Visibility {
 impl ToTokens for Visibility {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Visibility::Public(pub_keyword) => pub_keyword.to_tokens(tokens),
-            Visibility::Crate(rust_keyword, parenthesized) => {
+            Self::Public(pub_keyword) => pub_keyword.to_tokens(tokens),
+            Self::Crate(rust_keyword, parenthesized) => {
                 rust_keyword.to_tokens(tokens);
                 parenthesized.to_tokens(tokens);
             }
-            Visibility::SelfVis(rust_keyword, parenthesized) => {
+            Self::SelfVis(rust_keyword, parenthesized) => {
                 rust_keyword.to_tokens(tokens);
                 parenthesized.to_tokens(tokens);
             }
-            Visibility::PubIn(rust_keyword, parenthesized) => {
+            Self::PubIn(rust_keyword, parenthesized) => {
                 rust_keyword.to_tokens(tokens);
                 parenthesized.to_tokens(tokens);
             }
-            Visibility::Private => {}
+            Self::Private => {}
         }
     }
 }

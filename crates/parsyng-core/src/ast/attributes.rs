@@ -18,10 +18,12 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    pub fn is_inner(&self) -> bool {
+    #[must_use]
+    pub const fn is_inner(&self) -> bool {
         self.bang.is_some()
     }
 
+    #[must_use]
     pub fn span(&self) -> Span {
         self.meta.span()
     }

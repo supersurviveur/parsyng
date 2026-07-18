@@ -18,8 +18,9 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Struct {
+    #[allow(clippy::struct_field_names)]
     struct_token: StructKeyword,
-    struct_ident: Ident,
+    ident: Ident,
     pub generic_parameters: Option<GenericParams>,
     where_clause: Option<WhereClause>,
     pub fields: StructFields,
@@ -27,13 +28,15 @@ pub struct Struct {
 }
 
 impl Struct {
-    pub fn ident(&self) -> &Ident {
-        &self.struct_ident
+    #[must_use]
+    pub const fn ident(&self) -> &Ident {
+        &self.ident
     }
-    pub fn generic_parameters(&self) -> Option<&GenericParams> {
+    #[must_use]
+    pub const fn generic_parameters(&self) -> Option<&GenericParams> {
         self.generic_parameters.as_ref()
     }
-    pub fn generic_parameters_mut(&mut self) -> Option<&mut GenericParams> {
+    pub const fn generic_parameters_mut(&mut self) -> Option<&mut GenericParams> {
         self.generic_parameters.as_mut()
     }
     pub fn split_generics_for_impl(
@@ -72,7 +75,7 @@ impl Parse for Struct {
 
         Ok(Self {
             struct_token,
-            struct_ident,
+            ident: struct_ident,
             generic_parameters,
             where_clause,
             fields,
@@ -84,7 +87,7 @@ impl Parse for Struct {
 impl ToTokens for Struct {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.struct_token.to_tokens(tokens);
-        self.struct_ident.to_tokens(tokens);
+        self.ident.to_tokens(tokens);
         self.generic_parameters.to_tokens(tokens);
         self.where_clause.to_tokens(tokens);
         self.fields.to_tokens(tokens);
@@ -115,15 +118,18 @@ pub struct TupleField {
 }
 
 impl StructField {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.ident.span()
     }
-    pub fn ident(&self) -> &Ident {
+    #[must_use]
+    pub const fn ident(&self) -> &Ident {
         &self.ident
     }
 }
 
 impl TupleField {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.ty.span()
     }
@@ -164,9 +170,9 @@ impl ToTokens for StructField {
 impl ToTokens for StructFields {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            StructFields::Named(fields) => fields.to_tokens(tokens),
-            StructFields::Unnamed(fields) => fields.to_tokens(tokens),
-            StructFields::Unit => {}
+            Self::Named(fields) => fields.to_tokens(tokens),
+            Self::Unnamed(fields) => fields.to_tokens(tokens),
+            Self::Unit => {}
         }
     }
 }

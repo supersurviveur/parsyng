@@ -33,14 +33,14 @@ fn ts(input: &str) -> TokenStream {
     input.parse().unwrap()
 }
 
-pub(crate) fn parse_exact<T: crate::Parse>(tokens: TokenStream) -> T {
+pub fn parse_exact<T: crate::Parse>(tokens: TokenStream) -> T {
     let mut input = ParseBuffer::new(tokens);
     let value = input.parse::<T>().unwrap();
     assert!(input.is_empty());
     value
 }
 
-pub(crate) fn check<T: crate::Parse + ToTokens>(tokens: TokenStream) -> T {
+pub fn check<T: crate::Parse + ToTokens>(tokens: TokenStream) -> T {
     let expected = tokens.to_string();
     let parsed = parse_exact::<T>(tokens);
     let mut out = TokenStream::new();
@@ -186,11 +186,11 @@ fn expression_nodes() {
     let expr = check::<Expression>(quote! { foo });
     assert!(matches!(expr, Expression::WithoutBlock(_)));
 
-    let expr_wo = check::<ExpressionWithoutBlock>(quote! { foo });
-    assert!(matches!(expr_wo, ExpressionWithoutBlock::Path(_)));
+    let expr_without_block = check::<ExpressionWithoutBlock>(quote! { foo });
+    assert!(matches!(expr_without_block, ExpressionWithoutBlock::Path(_)));
 
-    let expr_wb = check::<ExpressionWithBlock>(quote! { { ; } });
-    assert!(matches!(expr_wb, ExpressionWithBlock::Block(_)));
+    let expr_with_block = check::<ExpressionWithBlock>(quote! { { ; } });
+    assert!(matches!(expr_with_block, ExpressionWithBlock::Block(_)));
 
     check::<BlockExpression>(quote! { 'lbl: { ; } });
     check::<UnsafeBlockExpression>(quote! { unsafe { ; } });

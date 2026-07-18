@@ -1,5 +1,3 @@
-#![allow(unexpected_cfgs)]
-
 use crate::ToTokens;
 
 use crate::{
@@ -10,8 +8,7 @@ use crate::{
 
 fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
     let span = input.span();
-    let mk_error =
-        || Diagnostics::new_error_spanned(format!("Expected keyword `{}`", keyword), span);
+    let mk_error = || Diagnostics::new_error_spanned(format!("Expected keyword `{keyword}`"), span);
 
     #[allow(clippy::cmp_owned)]
     input
@@ -21,7 +18,7 @@ fn parse_keyword(input: &mut ParseBuffer, keyword: &str) -> Result<Ident> {
 
 macro_rules! make_tokens {
     (@keywords $($keyword:ident $i:literal => $keyword_name:ident)* @puncts $($punct:tt $($lit:literal),* => $punct_name:ident #[doc = $punct_usage:literal])*) => {
-        #[cfg_attr(not(feature = "bootstrap"), macro_export)]
+        #[macro_export]
         macro_rules! Token {
             $(
                 ($keyword) => {
@@ -34,9 +31,6 @@ macro_rules! make_tokens {
                 };
             )*
         }
-
-        #[allow(unused_imports)]
-        pub(crate) use Token;
 
         make_keywords! {
             $($keyword $i => $keyword_name)*
@@ -214,20 +208,24 @@ pub struct RustPunct2<const A: char, const B: char>([Punct; 2]);
 pub struct RustPunct3<const A: char, const B: char, const C: char>([Punct; 3]);
 
 impl<const A: char> RustPunct1<A> {
+    #[must_use]
     pub fn new(span: Span) -> Self {
         let mut punct = Punct::new(A, Spacing::Alone);
         punct.set_span(span);
         Self([punct])
     }
+    #[must_use]
     pub fn span(&self) -> Span {
         self.0[0].span()
     }
+    #[must_use]
     pub fn spans(&self) -> [Span; 1] {
         self.0.clone().map(|punct| punct.span())
     }
 }
 
 impl<const A: char, const B: char> RustPunct2<A, B> {
+    #[must_use]
     pub fn new(span: Span) -> Self {
         let mut punct1 = Punct::new(A, Spacing::Joint);
         let mut punct2 = Punct::new(B, Spacing::Alone);
@@ -235,12 +233,14 @@ impl<const A: char, const B: char> RustPunct2<A, B> {
         punct2.set_span(span);
         Self([punct1, punct2])
     }
+    #[must_use]
     pub fn spans(&self) -> [Span; 2] {
         self.0.clone().map(|punct| punct.span())
     }
 }
 
 impl<const A: char, const B: char, const C: char> RustPunct3<A, B, C> {
+    #[must_use]
     pub fn new(span: Span) -> Self {
         let mut punct1 = Punct::new(A, Spacing::Joint);
         let mut punct2 = Punct::new(B, Spacing::Joint);
@@ -250,6 +250,7 @@ impl<const A: char, const B: char, const C: char> RustPunct3<A, B, C> {
         punct3.set_span(span);
         Self([punct1, punct2, punct3])
     }
+    #[must_use]
     pub fn spans(&self) -> [Span; 3] {
         self.0.clone().map(|punct| punct.span())
     }
@@ -262,7 +263,7 @@ impl<const A: char> Parse for RustPunct1<A> {
             return Ok(Self([punct1]));
         }
         Err(Diagnostics::new_error_spanned(
-            format!("Expected token `{}`", A),
+            format!("Expected token `{A}`"),
             error_span,
         ))
     }
@@ -285,7 +286,7 @@ impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
             return Ok(Self([punct1, punct2]));
         }
         Err(Diagnostics::new_error_spanned(
-            format!("Expected token `{}{}`", A, B),
+            format!("Expected token `{A}{B}`"),
             error_span,
         ))
     }
@@ -311,7 +312,7 @@ impl<const A: char, const B: char, const C: char> Parse for RustPunct3<A, B, C> 
             return Ok(Self([punct1, punct2, punct3]));
         }
         Err(Diagnostics::new_error_spanned(
-            format!("Expected token `{}{}{}`", A, B, C),
+            format!("Expected token `{A}{B}{C}`"),
             error_span,
         ))
     }

@@ -1,7 +1,13 @@
 [package]
 name = "simple-use-macros"
+description = "Simple demo of the `parsyng` crate"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/supersurviveur/parsyng"
+keywords = ["macros", "proc", "quote"]
+categories = ["development-tools::procedural-macro-helpers"]
 
 [lib]
 proc-macro = true

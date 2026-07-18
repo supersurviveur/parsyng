@@ -164,9 +164,9 @@ pub struct GroupedExpression {
 }
 
 impl Parse for ExpressionWithoutBlock {
-    #[allow(clippy::cmp_owned)]
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let expr = if let Some(ident) = input.peek_ident() {
+            #[allow(clippy::cmp_owned)]
             if ident.to_string() == "return" {
                 Self::Return(input.parse()?)
             } else if ident.to_string() == "break" {
@@ -337,31 +337,31 @@ impl Parse for Expression {
 impl ToTokens for ExpressionWithoutBlock {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            ExpressionWithoutBlock::Literal(literal) => literal.to_tokens(tokens),
-            ExpressionWithoutBlock::Path(path) => path.to_tokens(tokens),
-            ExpressionWithoutBlock::Await(await_expression) => await_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Index(index_expression) => index_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Tuple(tuple_expression) => tuple_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::TupleIndex(tuple_index_expression) => {
-                tuple_index_expression.to_tokens(tokens)
+            Self::Literal(literal) => literal.to_tokens(tokens),
+            Self::Path(path) => path.to_tokens(tokens),
+            Self::Await(await_expression) => await_expression.to_tokens(tokens),
+            Self::Index(index_expression) => index_expression.to_tokens(tokens),
+            Self::Tuple(tuple_expression) => tuple_expression.to_tokens(tokens),
+            Self::TupleIndex(tuple_index_expression) => {
+                tuple_index_expression.to_tokens(tokens);
             }
-            ExpressionWithoutBlock::Field(field_expression) => field_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Return(return_expression) => {
-                return_expression.to_tokens(tokens)
+            Self::Field(field_expression) => field_expression.to_tokens(tokens),
+            Self::Return(return_expression) => {
+                return_expression.to_tokens(tokens);
             }
-            ExpressionWithoutBlock::Continue(continue_expression) => {
-                continue_expression.to_tokens(tokens)
+            Self::Continue(continue_expression) => {
+                continue_expression.to_tokens(tokens);
             }
-            ExpressionWithoutBlock::Break(break_expression) => break_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Underscore(underscore_expression) => {
-                underscore_expression.to_tokens(tokens)
+            Self::Break(break_expression) => break_expression.to_tokens(tokens),
+            Self::Underscore(underscore_expression) => {
+                underscore_expression.to_tokens(tokens);
             }
-            ExpressionWithoutBlock::Grouped(grouped_expression) => {
-                grouped_expression.to_tokens(tokens)
+            Self::Grouped(grouped_expression) => {
+                grouped_expression.to_tokens(tokens);
             }
-            ExpressionWithoutBlock::Call(call_expression) => call_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Range(range_expression) => range_expression.to_tokens(tokens),
-            ExpressionWithoutBlock::Array(array_expression) => array_expression.to_tokens(tokens),
+            Self::Call(call_expression) => call_expression.to_tokens(tokens),
+            Self::Range(range_expression) => range_expression.to_tokens(tokens),
+            Self::Array(array_expression) => array_expression.to_tokens(tokens),
         }
     }
 }
@@ -369,12 +369,10 @@ impl ToTokens for ExpressionWithoutBlock {
 impl ToTokens for ExpressionWithBlock {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            ExpressionWithBlock::Block(block_expression) => block_expression.to_tokens(tokens),
-            ExpressionWithBlock::Unsafe(unsafe_block_expression) => {
-                unsafe_block_expression.to_tokens(tokens)
-            }
-            ExpressionWithBlock::Loop(loop_expression) => loop_expression.to_tokens(tokens),
-            ExpressionWithBlock::If(if_expression) => if_expression.to_tokens(tokens),
+            Self::Block(block_expression) => block_expression.to_tokens(tokens),
+            Self::Unsafe(unsafe_block_expression) => unsafe_block_expression.to_tokens(tokens),
+            Self::Loop(loop_expression) => loop_expression.to_tokens(tokens),
+            Self::If(if_expression) => if_expression.to_tokens(tokens),
         }
     }
 }
@@ -382,10 +380,10 @@ impl ToTokens for ExpressionWithBlock {
 impl ToTokens for Expression {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Expression::WithoutBlock(expression_without_block) => {
-                expression_without_block.to_tokens(tokens)
+            Self::WithoutBlock(expression_without_block) => {
+                expression_without_block.to_tokens(tokens);
             }
-            Expression::WithBlock(expression_with_block) => expression_with_block.to_tokens(tokens),
+            Self::WithBlock(expression_with_block) => expression_with_block.to_tokens(tokens),
         }
     }
 }
@@ -567,9 +565,9 @@ impl Parse for RangeExpression {
 }
 
 impl Parse for UnderscoreExpression {
-    #[allow(clippy::cmp_owned)]
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let underscore: Ident = input.parse()?;
+        #[allow(clippy::cmp_owned)]
         if underscore.to_string() == "_" {
             Ok(Self { underscore })
         } else {
@@ -619,12 +617,12 @@ impl Parse for TupleExpression {
 impl ToTokens for ArrayElements {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            ArrayElements::Repetition(expression, semicolon, expression1) => {
+            Self::Repetition(expression, semicolon, expression1) => {
                 expression.to_tokens(tokens);
                 semicolon.to_tokens(tokens);
                 expression1.to_tokens(tokens);
             }
-            ArrayElements::List(punctuated) => {
+            Self::List(punctuated) => {
                 punctuated.to_tokens(tokens);
             }
         }
@@ -644,13 +642,13 @@ impl Parse for ArrayElements {
         if let Ok(semicolon) = input.peek_parse() {
             return Ok(Self::Repetition(first, semicolon, input.parse()?));
         }
-        if !input.is_empty() {
+        if input.is_empty() {
+            Ok(Self::List(Punctuated::one(first)))
+        } else {
             let comma = input.parse()?;
             let mut list: Punctuated<Expression, _> = input.parse()?;
             list.push_back((first, comma));
             Ok(Self::List(list))
-        } else {
-            Ok(Self::List(Punctuated::one(first)))
         }
     }
 }
@@ -751,8 +749,8 @@ impl ToTokens for LoopExpression {
 impl ToTokens for ElseExpression {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            ElseExpression::If(if_expression) => if_expression.to_tokens(tokens),
-            ElseExpression::Block(block) => block.to_tokens(tokens),
+            Self::If(if_expression) => if_expression.to_tokens(tokens),
+            Self::Block(block) => block.to_tokens(tokens),
         }
     }
 }

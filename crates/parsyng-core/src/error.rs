@@ -23,7 +23,7 @@ impl Diagnostic {
 }
 impl Diagnostics {
     #[must_use]
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self(Vec::new())
     }
     #[must_use]
@@ -39,10 +39,10 @@ impl Diagnostics {
         Self::new(Diagnostic::new(error, span))
     }
     pub fn append(&mut self, diagnostic: Diagnostic) {
-        self.0.push(diagnostic)
+        self.0.push(diagnostic);
     }
     pub fn join(&mut self, other: Self) {
-        self.0.extend(other.0)
+        self.0.extend(other.0);
     }
 }
 

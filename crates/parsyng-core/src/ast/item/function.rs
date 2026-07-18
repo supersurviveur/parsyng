@@ -19,7 +19,8 @@ pub enum FunctionBody {
 }
 
 impl FunctionItem {
-    pub fn signature(&self) -> &FnSignature {
+    #[must_use]
+    pub const fn signature(&self) -> &FnSignature {
         &self.signature
     }
 }
@@ -48,8 +49,8 @@ impl ToTokens for FunctionItem {
 impl ToTokens for FunctionBody {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            FunctionBody::Block(block) => block.to_tokens(tokens),
-            FunctionBody::Semicolon(semicolon) => semicolon.to_tokens(tokens),
+            Self::Block(block) => block.to_tokens(tokens),
+            Self::Semicolon(semicolon) => semicolon.to_tokens(tokens),
         }
     }
 }

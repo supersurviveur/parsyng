@@ -12,42 +12,44 @@ impl Parse for TokenStream {
 
 impl Parse for TokenTree {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        input.next().ok_or(Diagnostics::new_error_spanned(
-            "Expected TokenTree",
-            input.span(),
-        ))
+        input
+            .next()
+            .ok_or_else(|| Diagnostics::new_error_spanned("Expected TokenTree", input.span()))
     }
 }
 impl Parse for Group {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        input.group().ok_or(Diagnostics::new_error_spanned(
-            "Expected Group",
-            input.span(),
-        ))
+        input
+            .group()
+            .ok_or_else(|| Diagnostics::new_error_spanned("Expected Group", input.span()))
     }
 }
 impl Parse for Ident {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        input.ident().ok_or(Diagnostics::new_error_spanned(
-            "Expected identifier",
-            input.span(),
-        ))
+        input
+            .ident()
+            .ok_or_else(|| Diagnostics::new_error_spanned("Expected identifier", input.span()))
     }
 }
 impl Parse for Literal {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        input.literal().ok_or(Diagnostics::new_error_spanned(
-            "Expected literal",
-            input.span(),
-        ))
+        input
+            .literal()
+            .ok_or_else(|| Diagnostics::new_error_spanned("Expected literal", input.span()))
     }
 }
 impl Parse for Punct {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        input.punct().ok_or(Diagnostics::new_error_spanned(
-            "Expected punctuation",
-            input.span(),
-        ))
+        input
+            .punct()
+            .ok_or_else(|| Diagnostics::new_error_spanned("Expected punctuation", input.span()))
+    }
+}
+
+#[cfg(feature = "proc-macro2")]
+impl Parse for crate::sealed::proc_macro::TokenStream {
+    fn parse(input: &mut ParseBuffer) -> Result<Self> {
+        Ok(input.collect::<TokenStream>().into())
     }
 }
 
@@ -57,7 +59,8 @@ pub struct TokenStreamUntilSemicolon {
 }
 
 impl TokenStreamUntilSemicolon {
-    pub fn tokens(&self) -> &TokenStream {
+    #[must_use]
+    pub const fn tokens(&self) -> &TokenStream {
         &self.tokens
     }
 }
@@ -87,7 +90,8 @@ pub struct TokenStreamUntilComma {
 }
 
 impl TokenStreamUntilComma {
-    pub fn tokens(&self) -> &TokenStream {
+    #[must_use]
+    pub const fn tokens(&self) -> &TokenStream {
         &self.tokens
     }
 }
@@ -117,7 +121,8 @@ pub struct TokenStreamUntilCommaOrGt {
 }
 
 impl TokenStreamUntilCommaOrGt {
-    pub fn tokens(&self) -> &TokenStream {
+    #[must_use]
+    pub const fn tokens(&self) -> &TokenStream {
         &self.tokens
     }
 }

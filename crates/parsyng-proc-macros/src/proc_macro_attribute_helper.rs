@@ -1,15 +1,13 @@
 use parsyng_core as parsyng;
 use parsyng_core::ToTokens;
 
-use parsyng_core::format_ident;
-use parsyng_core::quote;
 use parsyng_core::{
     Token,
     error::{self, Diagnostics},
-    parse,
+    format_ident, parse,
+    proc_macro::{Ident, TokenStream},
+    quote,
 };
-use proc_macro::Span;
-use proc_macro::{Ident, TokenStream};
 
 use crate::dbg_macros;
 
@@ -22,7 +20,7 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
     let macro_ident = signature.ident();
 
     let params = signature.args();
-    assert!(params.len() == 2);
+    assert_eq!(params.len(), 2);
     let mut params = params.iter();
 
     let attr_param = params.next().unwrap();
@@ -40,33 +38,26 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
     // Create new function
     let new_macro_ident = format_ident!("__parsyng_{}", signature.ident());
 
-    let dbg = if !args.is_empty() {
+    let dbg = if args.is_empty() {
+        TokenStream::new()
+    } else {
         let ident = args.parse::<Ident>()?;
+        #[allow(clippy::cmp_owned)]
         if ident.to_string() == "debug" {
-            dbg_macros(
-                macro_ident,
-                format!(
-                    "{}:{}:{}",
-                    Span::call_site().file(),
-                    Span::call_site().line(),
-                    Span::call_site().column()
-                ),
-            )
+            dbg_macros(macro_ident)
         } else {
             return Err(Diagnostics::new_error_spanned(
                 "Expected `debug` or no arguments.",
                 ident.span(),
             ));
         }
-    } else {
-        TokenStream::new()
     };
 
     let new_function = quote! {
         #[proc_macro_attribute]
         pub fn #macro_ident(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-            let mut attr_buffer = parsyng::parse::ParseBuffer::new(attr);
-            let mut item_buffer = parsyng::parse::ParseBuffer::new(item);
+            let mut attr_buffer = parsyng::parse::ParseBuffer::new(attr.into());
+            let mut item_buffer = parsyng::parse::ParseBuffer::new(item.into());
             let result = match (
                 <#attr_type as parsyng::parse::Parse>::parse(&mut attr_buffer),
                 <#item_type as parsyng::parse::Parse>::parse(&mut item_buffer)
@@ -74,14 +65,14 @@ pub fn proc_macro_attribute(args: TokenStream, input: TokenStream) -> error::Res
                 (Ok(attr), Ok(item)) => #new_macro_ident(attr, item),
                 (Err(mut err1), Err(err2)) => {
                     err1.join(err2);
-                    return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err1);
+                    return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err1).into();
                 }
-                (Err(err), _) => return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err),
-                (_, Err(err)) => return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err),
+                (Err(err), _) => return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err).into(),
+                (_, Err(err)) => return <parsyng::error::Diagnostics as parsyng::ToTokens>::to_token_stream(&err).into(),
             };
             let output = <#out_type as parsyng::ToTokens>::to_token_stream(&result);
             #dbg
-            output
+            output.into()
         }
     };
 

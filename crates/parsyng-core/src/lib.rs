@@ -3,11 +3,27 @@
 //! This crate provides the token-stream wrapper, parsing traits, AST types,
 //! and quote helpers used by the proc-macro front-end.
 
-#![deny(clippy::all)]
+// TODO: Maybe some additional restrictions can be helpfull, especially on comments.
+#![deny(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo,
+    // rustdoc::all,
+    rustdoc::redundant_explicit_links,
+    invalid_doc_attributes,
+    unused_doc_comments,
+    // missing_docs
+    // rustdoc::missing_doc_code_examples,
+)]
+#![allow(
+    clippy::option_if_let_else,
+    clippy::same_functions_in_if_condition,
+    clippy::too_many_lines
+)]
 
 // Put proc_macro in a private module to avoid being able to use `proc_macro::...` directly in this crate
 // This way the `proc-macro2` feature will work out of the box.
-#[cfg(not(feature = "proc-macro2"))]
 mod sealed {
     pub extern crate proc_macro;
 }
@@ -82,7 +98,7 @@ pub fn debug_stream(macro_name: &str, call_location: &str, input: &crate::proc_m
             // Wrap the input in a dummy function, otherwise statements like `let` can't be formatted
             let prefix = "fn __dummy() {\n";
             let suffix = "\n}";
-            let input = format!("{}{}{}", prefix, input, suffix);
+            let input = format!("{prefix}{input}{suffix}");
 
             let cargo = PathBuf::from(std::option_env!("CARGO")?);
             let mut rustfmt = cargo.parent()?.to_owned();
@@ -110,14 +126,11 @@ pub fn debug_stream(macro_name: &str, call_location: &str, input: &crate::proc_m
             Some(output)
         }
 
-        output = catch_rustfmt_errors(input).unwrap_or(input.to_string());
+        output = catch_rustfmt_errors(input).unwrap_or_else(|| input.to_string());
     }
     #[cfg(not(feature = "debug-pretty"))]
     {
         output = input;
     }
-    eprintln!(
-        "[DEBUG] proc-macro `{}` called at {}\n{}",
-        macro_name, call_location, output
-    );
+    eprintln!("[DEBUG] proc-macro `{macro_name}` called at {call_location}\n{output}");
 }

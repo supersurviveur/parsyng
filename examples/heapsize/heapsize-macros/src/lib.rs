@@ -8,7 +8,7 @@ use parsyng::{
 };
 
 #[parsyng::proc_macro_derive(HeapSize)]
-pub fn derive_heap_size(mut input: DeriveInput) -> proc_macro::TokenStream {
+pub fn derive_heap_size(mut input: DeriveInput) -> parsyng::proc_macro::TokenStream {
     // Add a bound `T: HeapSize` to every type parameter T.
     input.generics_parameters_mut().map(add_trait_bounds);
 

@@ -163,6 +163,7 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
     pub const fn trailing(&self) -> &Option<T> {
         &self.last
     }
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             content: Vec::new(),
@@ -197,11 +198,27 @@ impl<T, P, OnError> Punctuated<T, P, OnError> {
     }
 }
 
+impl<'a, T, P, OnError> IntoIterator for &'a Punctuated<T, P, OnError> {
+    type Item = &'a T;
+    type IntoIter = PunctuatedIter<'a, T, P>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T, P, OnError> IntoIterator for &'a mut Punctuated<T, P, OnError> {
+    type Item = &'a mut T;
+    type IntoIter = PunctuatedIterMut<'a, T, P>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 impl<T: Parse, P: Peek> Parse for Punctuated<T, P, StopOnError> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
         let mut content = Vec::new();
         let mut last = None;
-        while let Ok(element) = input.try_advance(|input| input.parse::<T>()) {
+        while let Ok(element) = input.try_advance(ParseBuffer::parse::<T>) {
             if let Ok(punct) = input.peek_parse() {
                 content.push((element, punct));
             } else {
@@ -225,10 +242,10 @@ impl<T: Parse, P: Parse> Parse for Punctuated<T, P, Greedy> {
 
         while !input.is_empty() {
             let element = input.parse::<T>()?;
-            if !input.is_empty() {
-                content.push((element, input.parse()?));
-            } else {
+            if input.is_empty() {
                 last = Some(element);
+            } else {
+                content.push((element, input.parse()?));
             }
         }
 
@@ -251,8 +268,8 @@ impl<T: ToTokens, P: ToTokens, OnError> ToTokens for Punctuated<T, P, OnError> {
 }
 impl<T: Parse> Parse for Vec<T> {
     fn parse(input: &mut ParseBuffer) -> Result<Self> {
-        let mut content = Vec::new();
-        while let Ok(element) = input.try_advance(|input| input.parse::<T>()) {
+        let mut content = Self::new();
+        while let Ok(element) = input.try_advance(ParseBuffer::parse::<T>) {
             content.push(element);
         }
 
@@ -263,6 +280,7 @@ pub struct GreedyVec<T> {
     inner: Vec<T>,
 }
 impl<T> GreedyVec<T> {
+    #[must_use]
     pub fn inner(self) -> Vec<T> {
         self.inner
     }
@@ -319,11 +337,11 @@ impl<A: ToTokens, B: ToTokens, C: ToTokens, D: ToTokens, E: ToTokens> ToTokens
 {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Either::First(first) => first.to_tokens(tokens),
-            Either::Second(second) => second.to_tokens(tokens),
-            Either::Third(third) => third.to_tokens(tokens),
-            Either::Fourth(fourth) => fourth.to_tokens(tokens),
-            Either::Fifth(fifth) => fifth.to_tokens(tokens),
+            Self::First(first) => first.to_tokens(tokens),
+            Self::Second(second) => second.to_tokens(tokens),
+            Self::Third(third) => third.to_tokens(tokens),
+            Self::Fourth(fourth) => fourth.to_tokens(tokens),
+            Self::Fifth(fifth) => fifth.to_tokens(tokens),
         }
     }
 }

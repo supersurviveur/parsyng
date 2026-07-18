@@ -2,9 +2,10 @@ use parsyng::{
     Parse, ToTokens,
     ast::{crate_source::Crate, item::r#struct::Struct, tokens::Comma},
     error::Result,
+    proc_macro::Ident,
+    proc_macro::TokenStream,
     quote,
 };
-use proc_macro::{Ident, TokenStream};
 
 #[derive(Parse, ToTokens)]
 pub(crate) struct Foo {

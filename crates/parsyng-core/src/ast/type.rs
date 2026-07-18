@@ -19,15 +19,15 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub enum Type {
-    Paren(Box<Parenthesized<Type>>),
+    Paren(Box<Parenthesized<Self>>),
     ImplTrait(TypeImplTrait),
     Path(Box<TypePath>),
-    Tuple(Box<Parenthesized<Punctuated<Type, Comma>>>),
+    Tuple(Box<Parenthesized<Punctuated<Self, Comma>>>),
     Never(Not),
     Pointer(TypePointer),
     Reference(TypeReference),
     Array(Box<Bracketed<TypeArray>>),
-    Slice(Box<Bracketed<Type>>),
+    Slice(Box<Bracketed<Self>>),
     DynTrait(TypeDynTrait),
     QualifiedPath(Box<TypeQualifiedPath>),
     BareFn(Box<TypeBareFn>),
@@ -35,6 +35,7 @@ pub enum Type {
 }
 
 impl Type {
+    #[must_use]
     pub fn span(&self) -> Span {
         match self {
             Self::Never(not) => not.span(),
@@ -51,6 +52,7 @@ pub struct TypePath {
 }
 
 impl TypePath {
+    #[must_use]
     pub fn span(&self) -> Span {
         self.root.span()
     }
@@ -282,7 +284,7 @@ impl Parse for Type {
                 Delimiter::Parenthesis => {
                     let group = input.group().expect("peeked group must exist");
                     let mut inner = ParseBuffer::new(group.stream());
-                    let content: Punctuated<Type, Comma> = inner.parse()?;
+                    let content: Punctuated<Self, Comma> = inner.parse()?;
                     if !inner.is_empty() {
                         return Err(Diagnostics::new_error_spanned(
                             "Unexpected tokens in tuple type",
@@ -300,7 +302,7 @@ impl Parse for Type {
                     if let Ok(array) = input.try_parse::<Bracketed<TypeArray>>() {
                         return Ok(Self::Array(Box::new(array)));
                     }
-                    if let Ok(slice) = input.try_parse::<Bracketed<Type>>() {
+                    if let Ok(slice) = input.try_parse::<Bracketed<Self>>() {
                         return Ok(Self::Slice(Box::new(slice)));
                     }
                 }
@@ -344,8 +346,8 @@ impl ToTokens for TypePointer {
 impl ToTokens for TypePointerKind {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            TypePointerKind::Const(const_token) => const_token.to_tokens(tokens),
-            TypePointerKind::Mut(mut_token) => mut_token.to_tokens(tokens),
+            Self::Const(const_token) => const_token.to_tokens(tokens),
+            Self::Mut(mut_token) => mut_token.to_tokens(tokens),
         }
     }
 }
@@ -385,8 +387,8 @@ impl ToTokens for TypeBareFn {
 impl ToTokens for BareFnParam {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            BareFnParam::Type(ty) => ty.to_tokens(tokens),
-            BareFnParam::Variadic(variadic) => variadic.to_tokens(tokens),
+            Self::Type(ty) => ty.to_tokens(tokens),
+            Self::Variadic(variadic) => variadic.to_tokens(tokens),
         }
     }
 }
@@ -404,19 +406,19 @@ impl ToTokens for TypeQualifiedPath {
 impl ToTokens for Type {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Type::Path(type_path) => type_path.to_tokens(tokens),
-            Type::Reference(reference) => reference.to_tokens(tokens),
-            Type::Pointer(pointer) => pointer.to_tokens(tokens),
-            Type::Tuple(tuple) => tuple.to_tokens(tokens),
-            Type::Paren(paren) => paren.to_tokens(tokens),
-            Type::Array(array) => array.to_tokens(tokens),
-            Type::Slice(slice) => slice.to_tokens(tokens),
-            Type::ImplTrait(impl_trait) => impl_trait.to_tokens(tokens),
-            Type::DynTrait(dyn_trait) => dyn_trait.to_tokens(tokens),
-            Type::BareFn(bare_fn) => bare_fn.to_tokens(tokens),
-            Type::QualifiedPath(qualified) => qualified.to_tokens(tokens),
-            Type::Never(never) => never.to_tokens(tokens),
-            Type::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
+            Self::Path(type_path) => type_path.to_tokens(tokens),
+            Self::Reference(reference) => reference.to_tokens(tokens),
+            Self::Pointer(pointer) => pointer.to_tokens(tokens),
+            Self::Tuple(tuple) => tuple.to_tokens(tokens),
+            Self::Paren(paren) => paren.to_tokens(tokens),
+            Self::Array(array) => array.to_tokens(tokens),
+            Self::Slice(slice) => slice.to_tokens(tokens),
+            Self::ImplTrait(impl_trait) => impl_trait.to_tokens(tokens),
+            Self::DynTrait(dyn_trait) => dyn_trait.to_tokens(tokens),
+            Self::BareFn(bare_fn) => bare_fn.to_tokens(tokens),
+            Self::QualifiedPath(qualified) => qualified.to_tokens(tokens),
+            Self::Never(never) => never.to_tokens(tokens),
+            Self::MacroInvocation(macro_invocation) => macro_invocation.to_tokens(tokens),
         }
     }
 }

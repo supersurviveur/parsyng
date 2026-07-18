@@ -27,20 +27,21 @@ pub struct PatIdent {
 }
 
 impl Pattern {
+    #[must_use]
     pub fn ident(&self) -> Option<&Ident> {
         match self {
-            Pattern::Ident(pat_ident) => Some(&pat_ident.ident),
-            Pattern::Wildcard(pat_wildcard) => Some(&pat_wildcard.underscore),
-            Pattern::Tuple(_) => None,
-            Pattern::Ref(pat_ref) => pat_ref.pat.ident(),
+            Self::Ident(pat_ident) => Some(&pat_ident.ident),
+            Self::Wildcard(pat_wildcard) => Some(&pat_wildcard.underscore),
+            Self::Tuple(_) => None,
+            Self::Ref(pat_ref) => pat_ref.pat.ident(),
         }
     }
+    #[must_use]
     pub fn mutability(&self) -> Option<&Mut> {
         match self {
-            Pattern::Ident(pat_ident) => pat_ident.mutability.as_ref(),
-            Pattern::Wildcard(_) => None,
-            Pattern::Tuple(_) => None,
-            Pattern::Ref(pat_ref) => pat_ref.pat.mutability(),
+            Self::Ident(pat_ident) => pat_ident.mutability.as_ref(),
+            Self::Wildcard(_) | Self::Tuple(_) => None,
+            Self::Ref(pat_ref) => pat_ref.pat.mutability(),
         }
     }
 }
@@ -92,9 +93,9 @@ impl Parse for PatIdent {
 }
 
 impl Parse for PatWildcard {
-    #[allow(clippy::cmp_owned)]
     fn parse(input: &mut crate::parse::ParseBuffer) -> crate::error::Result<Self> {
         let underscore: Ident = input.parse()?;
+        #[allow(clippy::cmp_owned)]
         if underscore.to_string() == "_" {
             Ok(Self { underscore })
         } else {
@@ -127,10 +128,10 @@ impl Parse for PatRef {
 impl ToTokens for Pattern {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            Pattern::Ident(ident) => ident.to_tokens(tokens),
-            Pattern::Wildcard(wildcard) => wildcard.to_tokens(tokens),
-            Pattern::Tuple(tuple) => tuple.to_tokens(tokens),
-            Pattern::Ref(reference) => reference.to_tokens(tokens),
+            Self::Ident(ident) => ident.to_tokens(tokens),
+            Self::Wildcard(wildcard) => wildcard.to_tokens(tokens),
+            Self::Tuple(tuple) => tuple.to_tokens(tokens),
+            Self::Ref(reference) => reference.to_tokens(tokens),
         }
     }
 }

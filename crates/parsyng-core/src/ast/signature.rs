@@ -53,37 +53,43 @@ pub struct PatType {
 }
 
 impl FnParam {
+    #[must_use]
     pub fn ty(&self) -> Option<&Type> {
         match self {
-            FnParam::SelfParam(self_param) => self_param.typed.as_ref().map(|x| &x.1),
-            FnParam::Typed(pat_type) => Some(&pat_type.ty),
-            FnParam::Variadic(_) => None,
+            Self::SelfParam(self_param) => self_param.typed.as_ref().map(|x| &x.1),
+            Self::Typed(pat_type) => Some(&pat_type.ty),
+            Self::Variadic(_) => None,
         }
     }
+    #[must_use]
     pub fn ident(&self) -> Option<&Ident> {
         match self {
-            FnParam::SelfParam(_) => todo!(),
-            FnParam::Typed(pat_type) => pat_type.pat.ident(),
-            FnParam::Variadic(_) => None,
+            Self::SelfParam(_) => todo!(),
+            Self::Typed(pat_type) => pat_type.pat.ident(),
+            Self::Variadic(_) => None,
         }
     }
+    #[must_use]
     pub fn mutability(&self) -> Option<&Mut> {
         match self {
-            FnParam::SelfParam(_) => todo!(),
-            FnParam::Typed(pat_type) => pat_type.pat.mutability(),
-            FnParam::Variadic(_) => None,
+            Self::SelfParam(_) => todo!(),
+            Self::Typed(pat_type) => pat_type.pat.mutability(),
+            Self::Variadic(_) => None,
         }
     }
 }
 
 impl FnSignature {
-    pub fn ident(&self) -> &Ident {
+    #[must_use]
+    pub const fn ident(&self) -> &Ident {
         &self.ident
     }
+    #[must_use]
     pub fn return_type(&self) -> Option<&Type> {
         self.return_type.as_ref().map(|x| &x.1)
     }
-    pub fn args(&self) -> &Punctuated<FnParam, Comma> {
+    #[must_use]
+    pub const fn args(&self) -> &Punctuated<FnParam, Comma> {
         self.params.inner_ref()
     }
 }
@@ -175,9 +181,9 @@ impl ToTokens for FnSignature {
 impl ToTokens for FnParam {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         match self {
-            FnParam::SelfParam(self_param) => self_param.to_tokens(tokens),
-            FnParam::Typed(typed) => typed.to_tokens(tokens),
-            FnParam::Variadic(variadic) => variadic.to_tokens(tokens),
+            Self::SelfParam(self_param) => self_param.to_tokens(tokens),
+            Self::Typed(typed) => typed.to_tokens(tokens),
+            Self::Variadic(variadic) => variadic.to_tokens(tokens),
         }
     }
 }
