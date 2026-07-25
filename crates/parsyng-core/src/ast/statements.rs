@@ -1,3 +1,5 @@
+//! Statements, i.e. the contents of a `{ ... }` block.
+
 use crate::ToTokens;
 
 use crate::{
@@ -10,11 +12,29 @@ use crate::{
     parse::Parse,
 };
 
+/// One statement inside a block: an empty `;`, a local item declaration, or
+/// an expression.
+///
+/// The expression variants carry an optional trailing `;` — a
+/// semicolon-less expression-without-block in tail position is the block's
+/// value.
+///
+/// Reference: <https://doc.rust-lang.org/reference/statements.html>
 #[derive(Clone, Debug)]
 pub enum Statement {
+    /// An empty `;` statement.
     Semicolon(Semicolon),
+    /// A local item declaration.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/statements.html#item-declarations>
     Item(Box<Item>),
+    /// An expression ending in a block, followed by `;`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/statements.html#expression-statements>
     ExpressionWithBlock(ExpressionWithBlock, Semicolon),
+    /// An expression without a block, with an optional trailing `;`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/statements.html#expression-statements>
     ExpressionWithoutBlock(ExpressionWithoutBlock, Option<Semicolon>),
 }
 

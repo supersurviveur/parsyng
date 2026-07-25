@@ -1,3 +1,9 @@
+//! Patterns, e.g. the `pat` in `let pat = ...` or a function parameter.
+//!
+//! Coverage is intentionally minimal — enough for typical function/closure
+//! parameter patterns — and does not include literal, path, struct, slice or
+//! `|`-alternative patterns.
+
 use crate::ToTokens;
 
 use crate::{
@@ -11,14 +17,32 @@ use crate::{
     proc_macro::Ident,
 };
 
+/// A pattern. See the [module docs](self) for coverage.
+///
+/// Reference: <https://doc.rust-lang.org/reference/patterns.html>
 #[derive(Clone, Debug)]
 pub enum Pattern {
+    /// A binding pattern, e.g. `ref mut name`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/patterns.html#identifier-patterns>
     Ident(PatIdent),
+    /// The wildcard pattern `_`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/patterns.html#wildcard-pattern>
     Wildcard(PatWildcard),
+    /// A tuple pattern: `(a, b, c)`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/patterns.html#tuple-patterns>
     Tuple(Box<PatTuple>),
+    /// A reference pattern: `&mut pat`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/patterns.html#reference-patterns>
     Ref(PatRef),
 }
 
+/// A binding pattern, e.g. `ref mut name`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/patterns.html#identifier-patterns>
 #[derive(Clone, Debug)]
 pub struct PatIdent {
     by_ref: Option<Ref>,
@@ -27,6 +51,8 @@ pub struct PatIdent {
 }
 
 impl Pattern {
+    /// The bound identifier, for [`Ident`](Self::Ident)/[`Wildcard`](Self::Wildcard)
+    /// (recursing through [`Ref`](Self::Ref)); `None` for [`Tuple`](Self::Tuple).
     #[must_use]
     pub fn ident(&self) -> Option<&Ident> {
         match self {
@@ -36,6 +62,8 @@ impl Pattern {
             Self::Ref(pat_ref) => pat_ref.pat.ident(),
         }
     }
+    /// The `mut` token, if this pattern (or, recursing through
+    /// [`Ref`](Self::Ref), the pattern it wraps) is mutable.
     #[must_use]
     pub fn mutability(&self) -> Option<&Mut> {
         match self {
@@ -46,16 +74,25 @@ impl Pattern {
     }
 }
 
+/// The wildcard pattern `_`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/patterns.html#wildcard-pattern>
 #[derive(Clone, Debug)]
 pub struct PatWildcard {
     underscore: Ident,
 }
 
+/// A tuple pattern, e.g. `(a, b, c)`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/patterns.html#tuple-patterns>
 #[derive(Clone, Debug)]
 pub struct PatTuple {
     elems: Parenthesized<Punctuated<Pattern, Comma>>,
 }
 
+/// A reference pattern, e.g. `&mut pat`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/patterns.html#reference-patterns>
 #[derive(Clone, Debug)]
 pub struct PatRef {
     and_token: And,

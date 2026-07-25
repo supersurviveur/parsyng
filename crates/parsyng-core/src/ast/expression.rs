@@ -1,3 +1,13 @@
+//! Expressions.
+//!
+//! Following the Rust reference, the grammar is split into expressions that
+//! end in a `{ ... }` block ([`ExpressionWithBlock`] — `if`, `loop`, `unsafe
+//! { }`, bare blocks) and those that don't ([`ExpressionWithoutBlock`] —
+//! everything else). The distinction matters for parsing statements: an
+//! [`ExpressionWithBlock`] can appear as a statement without a trailing
+//! `;`, while an [`ExpressionWithoutBlock`] needs one (except in tail
+//! position). [`Expression`] itself is a thin wrapper over the two.
+
 use crate::{ToTokens, proc_macro::Delimiter};
 
 use crate::{
@@ -18,51 +28,136 @@ use crate::{
     proc_macro::Ident,
 };
 
+/// Any expression: either [`WithBlock`](Self::WithBlock) or
+/// [`WithoutBlock`](Self::WithoutBlock) — see the [module docs](self).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions.html>
 #[derive(Clone, Debug)]
 pub enum Expression {
+    /// An expression without a trailing `{ ... }` block.
     WithoutBlock(Box<ExpressionWithoutBlock>),
+    /// An expression ending in a `{ ... }` block.
     WithBlock(Box<ExpressionWithBlock>),
 }
 
+/// An expression that doesn't end in a `{ ... }` block. See the
+/// [module docs](self) for what's covered.
+///
+/// Parsing handles the trailing/postfix operators (`.await`, `.0`/`.field`,
+/// `[index]`, `(call)`, `..`/`..=` ranges) itself, in a loop, after parsing
+/// the leading primary expression — so e.g. `foo.bar().baz` parses as nested
+/// [`FieldExpression`]/[`CallExpression`] values.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions.html>
 #[derive(Clone, Debug)]
 pub enum ExpressionWithoutBlock {
+    /// A literal, e.g. `1`, `1.5`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/literal-expr.html>
     Literal(Literal),
+    /// A path used as an expression, e.g. `foo::bar`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/path-expr.html>
     Path(TypePath),
+    /// `expr.await`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/await-expr.html>
     Await(AwaitExpression),
+    /// `expr[index]`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/array-expr.html#array-and-slice-indexing-expressions>
     Index(IndexExpression),
+    /// `[a, b, c]` or `[x; n]`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/array-expr.html#array-expressions>
     Array(ArrayExpression),
+    /// `(a, b, c)`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/tuple-expr.html#tuple-expressions>
     Tuple(TupleExpression),
+    /// `expr.0`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/tuple-expr.html#tuple-indexing-expressions>
     TupleIndex(TupleIndexExpression),
+    /// `expr.field`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/field-expr.html>
     Field(FieldExpression),
+    /// `return expr`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/return-expr.html>
     Return(ReturnExpression),
+    /// `continue` / `continue 'label`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#continue-expressions>
     Continue(ContinueExpression),
+    /// `break`, `break 'label`, or `break expr`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#break-expressions>
     Break(BreakExpression),
+    /// `_`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/underscore-expr.html>
     Underscore(UnderscoreExpression),
+    /// `(expr)`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/grouped-expr.html>
     Grouped(GroupedExpression),
+    /// `expr(a, b)`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/call-expr.html>
     Call(CallExpression),
+    /// `a..b`, `a..`, `..b`, `..`, `a..=b`, or `..=b`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/range-expr.html>
     Range(RangeExpression),
 }
 
+/// An expression that ends in a `{ ... }` block: a bare block, `unsafe`
+/// block, `loop`, or `if`. See the [module docs](self).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions.html>
 #[derive(Clone, Debug)]
 pub enum ExpressionWithBlock {
+    /// A bare (possibly labeled) block: `{ ... }`.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/block-expr.html>
     Block(BlockExpression),
+    /// An `unsafe { ... }` block.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/block-expr.html#unsafe-blocks>
     Unsafe(UnsafeBlockExpression),
+    /// A `loop { ... }` expression.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#infinite-loops>
     Loop(LoopExpression),
+    /// An `if condition { ... } else ...` expression.
+    ///
+    /// Reference: <https://doc.rust-lang.org/reference/expressions/if-expr.html>
     If(IfExpression),
 }
 
+/// A bare block, optionally labeled: `'label: { ... }`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/block-expr.html>
 #[derive(Clone, Debug)]
 pub struct BlockExpression {
     label: Option<(Lifetime, Colon)>,
     block: Braced<Vec<Statement>>,
 }
 
+/// An `unsafe { ... }` block.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/block-expr.html#unsafe-blocks>
 #[derive(Clone, Debug)]
 pub struct UnsafeBlockExpression {
     unsafe_token: Unsafe,
     block: Braced<Vec<Statement>>,
 }
 
+/// A `loop { ... }` expression, optionally labeled.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#infinite-loops>
 #[derive(Clone, Debug)]
 pub struct LoopExpression {
     label: Option<(Lifetime, Colon)>,
@@ -70,6 +165,9 @@ pub struct LoopExpression {
     block: Braced<Vec<Statement>>,
 }
 
+/// An `if condition { ... } else ...` expression.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/if-expr.html>
 #[derive(Clone, Debug)]
 pub struct IfExpression {
     if_token: If,
@@ -78,38 +176,67 @@ pub struct IfExpression {
     else_branch: Option<(Else, ElseExpression)>,
 }
 
+/// The `else` branch of an [`IfExpression`]: another `if` (for `else if`
+/// chains) or a plain block.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/if-expr.html>
 #[derive(Clone, Debug)]
 pub enum ElseExpression {
+    /// `else if ...` (chaining into another `if`).
     If(Box<IfExpression>),
+    /// `else { ... }`.
     Block(Braced<Vec<Statement>>),
 }
 
+/// `expr.await`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/await-expr.html>
 #[derive(Clone, Debug)]
 pub struct AwaitExpression {
     expr: Expression,
     dot: Dot,
     await_token: Await,
 }
+/// `expr[index]`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/array-expr.html#array-and-slice-indexing-expressions>
 #[derive(Clone, Debug)]
 pub struct IndexExpression {
     expr: Expression,
     index: Bracketed<Expression>,
 }
+/// A tuple expression: `(a, b, c)`. Parsing rejects zero elements and a
+/// single element without a trailing comma, to disambiguate from
+/// [`GroupedExpression`] (`(expr)`).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/tuple-expr.html#tuple-expressions>
 #[derive(Clone, Debug)]
 pub struct TupleExpression {
     exprs: Parenthesized<Punctuated<Expression, Comma>>,
 }
 
+/// An array expression: `[a, b, c]` or `[x; n]`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/array-expr.html#array-expressions>
 #[derive(Clone, Debug)]
 pub struct ArrayExpression {
     exprs: Bracketed<ArrayElements>,
 }
 
+/// The inside of an [`ArrayExpression`]'s brackets: a repeat expression
+/// (`x; n`) or an element list (`a, b, c`).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/array-expr.html#array-expressions>
 #[derive(Clone, Debug)]
 pub enum ArrayElements {
+    /// `x; n` — repeat `x` `n` times.
     Repetition(Expression, Semicolon, Expression),
+    /// `a, b, c` — a literal element list.
     List(Punctuated<Expression, Comma>),
 }
+/// `expr.0` (numeric tuple-field access).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/tuple-expr.html#tuple-indexing-expressions>
 #[derive(Clone, Debug)]
 pub struct TupleIndexExpression {
     expr: Expression,
@@ -117,6 +244,9 @@ pub struct TupleIndexExpression {
     index: LiteralNumber,
 }
 
+/// `expr.field` (named field access).
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/field-expr.html>
 #[derive(Clone, Debug)]
 pub struct FieldExpression {
     expr: Expression,
@@ -124,17 +254,26 @@ pub struct FieldExpression {
     field: Ident,
 }
 
+/// `return expr`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/return-expr.html>
 #[derive(Clone, Debug)]
 pub struct ReturnExpression {
     return_token: Return,
     expr: Expression,
 }
 
+/// `continue` / `continue 'label`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#continue-expressions>
 #[derive(Clone, Debug)]
 pub struct ContinueExpression {
     continue_token: Continue,
     label: Option<Lifetime>,
 }
+/// `break`, `break 'label`, or `break expr`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/loop-expr.html#break-expressions>
 #[derive(Clone, Debug)]
 pub struct BreakExpression {
     break_token: Break,
@@ -142,11 +281,17 @@ pub struct BreakExpression {
     expr: Option<Expression>,
 }
 
+/// `expr(a, b)` — a function call.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/call-expr.html>
 #[derive(Clone, Debug)]
 pub struct CallExpression {
     expr: Expression,
     params: Parenthesized<Punctuated<Expression, Comma>>,
 }
+/// A range expression: `a..b`, `a..`, `..b`, `..`, `a..=b`, or `..=b`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/range-expr.html>
 #[derive(Clone, Debug)]
 pub struct RangeExpression {
     start: Option<Expression>,
@@ -154,10 +299,16 @@ pub struct RangeExpression {
     dot_eq: Option<DotDotEq>,
     end: Option<Expression>,
 }
+/// The wildcard/placeholder expression `_`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/underscore-expr.html>
 #[derive(Clone, Debug)]
 pub struct UnderscoreExpression {
     underscore: Ident,
 }
+/// A parenthesized expression: `(expr)`.
+///
+/// Reference: <https://doc.rust-lang.org/reference/expressions/grouped-expr.html>
 #[derive(Clone, Debug)]
 pub struct GroupedExpression {
     group: Parenthesized<Expression>,
