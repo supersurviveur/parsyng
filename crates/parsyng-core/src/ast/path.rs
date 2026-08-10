@@ -44,6 +44,23 @@ impl Parse for SimplePath {
     }
 }
 
+impl SimplePath {
+    /// This path's sole identifier, if it has no leading `::` and no
+    /// additional `::`-separated segments.
+    ///
+    /// Used by [`ast::pattern`](crate::ast::pattern) to tell a bare
+    /// identifier pattern (`name`) apart from a longer path pattern
+    /// (`Foo::Bar`).
+    #[must_use]
+    pub(crate) const fn as_single_ident(&self) -> Option<&Ident> {
+        if self.start_token.is_none() && self.paths.is_empty() {
+            Some(&self.root)
+        } else {
+            None
+        }
+    }
+}
+
 impl ToTokens for SimplePath {
     fn to_tokens(&self, tokens: &mut crate::proc_macro::TokenStream) {
         self.start_token.to_tokens(tokens);

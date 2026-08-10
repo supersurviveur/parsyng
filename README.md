@@ -58,9 +58,9 @@ A `#[derive(...)]`-style macro built directly on the `ast` types, ported from
 ## Why not `syn`?
 
 `parsyng` does not aim to be a superset of `syn`'s grammar coverage — a few
-corners (string/char literals, full pattern matching, most expression kinds
-beyond what's needed to write derive macros) are still unimplemented; see the
-`ast` module documentation for exact coverage. What it offers instead:
+corners (string/char/byte literals, slice/range/box patterns, unstable
+let-chains, `try`/`yeet` blocks, inline `asm!`) are still unimplemented; see
+the `ast` module documentation for exact coverage. What it offers instead:
 
 - A single crate with no required dependency on `syn`/`quote`, built directly
   on `proc_macro` (or, optionally, `proc_macro2`).

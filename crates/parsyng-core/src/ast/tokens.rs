@@ -371,6 +371,7 @@ impl<const A: char, const B: char> Parse for RustPunct2<A, B> {
         let error_span: Span = input.span();
         if let Some(punct1) = input.punct()
             && punct1.as_char() == A
+            && punct1.spacing() == Spacing::Joint
             && let Some(punct2) = input.punct()
             && punct2.as_char() == B
         {
@@ -395,8 +396,10 @@ impl<const A: char, const B: char, const C: char> Parse for RustPunct3<A, B, C> 
         let error_span: Span = input.span();
         if let Some(punct1) = input.punct()
             && punct1.as_char() == A
+            && punct1.spacing() == Spacing::Joint
             && let Some(punct2) = input.punct()
             && punct2.as_char() == B
+            && punct2.spacing() == Spacing::Joint
             && let Some(punct3) = input.punct()
             && punct3.as_char() == C
         {
